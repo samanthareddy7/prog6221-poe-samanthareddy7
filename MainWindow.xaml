@@ -1,0 +1,187 @@
+﻿<Window x:Class="samantha_progpart3.MainWindow"
+       
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:samantha_progpart3"
+        mc:Ignorable="d"
+        Title="Encryptonite - Cybersecurity Chatbot" Height="700" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="LightPink">
+
+    <!-- Resources and Styles -->
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="HotPink"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="5"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#45a049"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="ListBox">
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+
+        <Style x:Key="ChatBotMessageStyle" TargetType="TextBlock">
+            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="MaxWidth" Value="700"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <Style x:Key="UserMessageStyle" TargetType="TextBlock">
+            <Setter Property="Background" Value="#DCF8C6"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="MaxWidth" Value="700"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.ColumnSpan="3" HorizontalAlignment="Center" Margin="0,0,0,10" FontSize="28" FontWeight="Bold" Foreground="#333333">
+            Encryptonite: Your Cybersecurity Awareness Chatbot
+        </TextBlock>
+
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="5" Padding="10" Background="White" Margin="0,0,10,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="ChatDisplayPanel"/>
+                </ScrollViewer>
+
+                <DockPanel Grid.Row="1" LastChildFill="True" Margin="0,10,0,0">
+                    <Button Content="Send" DockPanel.Dock="Right" Click="SendMessage_Click" Width="80"/>
+                    <TextBox x:Name="UserInputTextBox" TextWrapping="Wrap" VerticalContentAlignment="Center" KeyDown="UserInputTextBox_KeyDown"/>
+                </DockPanel>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Column="1" Grid.Row="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#E0E0E0"/>
+
+        <TabControl Grid.Row="1" Grid.Column="2" BorderBrush="#CCCCCC" BorderThickness="1" Background="#F0F2F5">
+            <TabItem Header="Tasks" Height="22" Margin="-2,-2,-2,0" VerticalAlignment="Top">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Add New Task" FontWeight="Bold" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="TaskTitleTextBox" Text="Task Title (e.g., Enable 2FA)"/>
+                        <TextBox x:Name="TaskDescriptionTextBox" TextWrapping="Wrap" AcceptsReturn="True" Height="60" Text="Description (optional)"/>
+                        <DatePicker x:Name="ReminderDatePicker" SelectedDateFormat="Short" Margin="5"/>
+                        <Button Content="Add Task" Click="AddTask_Click"/>
+                        <TextBlock Text="Your Tasks" FontWeight="Bold" FontSize="16" Margin="0,15,0,5"/>
+                        <ListBox x:Name="TasksListBox" MinHeight="150" Background="White">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#EEEEEE" BorderThickness="1" Padding="5" Margin="0,2" CornerRadius="3" Background="White">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Content="Completed" IsChecked="{Binding IsCompleted}" VerticalAlignment="Center" Margin="0,0,5,0" Click="TaskCompleted_Click"/>
+                                            <StackPanel Grid.Column="1" Margin="5,0">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#666" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding ReminderDateFormatted}" FontSize="11" Foreground="#999" FontStyle="Italic"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="Delete" Click="DeleteTask_Click" Background="#F44336"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Quiz">
+                <StackPanel Margin="10">
+                    <TextBlock x:Name="QuizQuestionTextBlock" Text="Click 'Start Quiz' to begin!" FontWeight="Bold" FontSize="16" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                    <StackPanel x:Name="QuizOptionsPanel"/>
+                    <Button x:Name="SubmitQuizAnswerButton" Content="Submit Answer" Click="SubmitQuizAnswer_Click" IsEnabled="False"/>
+                    <Button x:Name="StartQuizButton" Content="Start Quiz" Click="StartQuiz_Click" Margin="0,10,0,0"/>
+                    <TextBlock x:Name="QuizFeedbackTextBlock" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#FF5722"/>
+                    <TextBlock x:Name="QuizScoreTextBlock" Margin="0,5,0,0" TextWrapping="Wrap" FontWeight="SemiBold" Foreground="#3F51B5"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Activity Log">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
+                    <ListBox x:Name="ActivityLogListBox" MinHeight="100" Background="White">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock>
+                                        <Run Text="{Binding Timestamp, StringFormat='HH:mm:ss '}"/>
+                                        <Run Text="{Binding Description}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
