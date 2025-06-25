@@ -1,0 +1,35 @@
+name: Build and Syntax Check
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    # Changed runner to windows-latest for WPF applications
+    runs-on: windows-latest
+
+    steps:
+      # Check Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Set up .NET SDK
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0'
+
+      # Restore any dependencies 
+      - name: Dependencies
+        run: dotnet restore
+
+     # Run Unit Tests
+      - name: Unit Test
+        run: dotnet test
+
+      # Build the Project
+      - name: Project Build 
+        run: dotnet build --configuration Release
