@@ -10,7 +10,6 @@
         WindowStartupLocation="CenterScreen"
         Background="LightPink">
 
-    <!-- Resources and Styles -->
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Background" Value="HotPink"/>
@@ -34,14 +33,14 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#45a049"/>
+                    <Setter Property="Background" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="5"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="White"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="FontSize" Value="14"/>
@@ -49,7 +48,7 @@
         </Style>
 
         <Style TargetType="ListBox">
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="White"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="FontSize" Value="14"/>
@@ -64,7 +63,7 @@
         </Style>
 
         <Style x:Key="ChatBotMessageStyle" TargetType="TextBlock">
-            <Setter Property="Background" Value="#E0E0E0"/>
+            <Setter Property="Background" Value="White"/>
             <Setter Property="Padding" Value="8"/>
             <Setter Property="Margin" Value="5,2"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
@@ -74,7 +73,7 @@
         </Style>
 
         <Style x:Key="UserMessageStyle" TargetType="TextBlock">
-            <Setter Property="Background" Value="#DCF8C6"/>
+            <Setter Property="Background" Value="White"/>
             <Setter Property="Padding" Value="8"/>
             <Setter Property="Margin" Value="5,2"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -119,7 +118,7 @@
 
         <GridSplitter Grid.Column="1" Grid.Row="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#E0E0E0"/>
 
-        <TabControl Grid.Row="1" Grid.Column="2" BorderBrush="#CCCCCC" BorderThickness="1" Background="#F0F2F5">
+        <TabControl Grid.Row="1" Grid.Column="2" BorderBrush="White" BorderThickness="1" Background="White">
             <TabItem Header="Tasks" Height="22" Margin="-2,-2,-2,0" VerticalAlignment="Top">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
@@ -132,7 +131,7 @@
                         <ListBox x:Name="TasksListBox" MinHeight="150" Background="White">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="#EEEEEE" BorderThickness="1" Padding="5" Margin="0,2" CornerRadius="3" Background="White">
+                                    <Border BorderBrush="White" BorderThickness="1" Padding="5" Margin="0,2" CornerRadius="3" Background="White">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
