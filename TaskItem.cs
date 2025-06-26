@@ -1,11 +1,12 @@
 ﻿using System;
-using System.ComponentModel; // For INotifyPropertyChanged
+using System.ComponentModel;
+using System.Runtime.CompilerServices; 
 
-namespace samantha_progpart3 // Ensure this matches your project's namespace
+namespace samantha_progpart3 
 {
     public class TaskItem : INotifyPropertyChanged
     {
-        private string _title;
+        private string _title = string.Empty;
         public string Title
         {
             get { return _title; }
@@ -14,12 +15,12 @@ namespace samantha_progpart3 // Ensure this matches your project's namespace
                 if (_title != value)
                 {
                     _title = value;
-                    OnPropertyChanged(nameof(Title));
+                    OnPropertyChanged(); 
                 }
             }
         }
 
-        private string _description;
+        private string _description = string.Empty; 
         public string Description
         {
             get { return _description; }
@@ -28,25 +29,12 @@ namespace samantha_progpart3 // Ensure this matches your project's namespace
                 if (_description != value)
                 {
                     _description = value;
-                    OnPropertyChanged(nameof(Description));
+                    OnPropertyChanged(); 
                 }
             }
         }
 
-        private DateTime? _reminderDate;
-        public DateTime? ReminderDate
-        {
-            get { return _reminderDate; }
-            set
-            {
-                if (_reminderDate != value)
-                {
-                    _reminderDate = value;
-                    OnPropertyChanged(nameof(ReminderDate));
-                    OnPropertyChanged(nameof(ReminderDateFormatted));
-                }
-            }
-        }
+        public DateTime? ReminderDate { get; set; } // Nullable DateTime
 
         private bool _isCompleted;
         public bool IsCompleted
@@ -57,7 +45,7 @@ namespace samantha_progpart3 // Ensure this matches your project's namespace
                 if (_isCompleted != value)
                 {
                     _isCompleted = value;
-                    OnPropertyChanged(nameof(IsCompleted));
+                    OnPropertyChanged(); 
                 }
             }
         }
@@ -68,9 +56,9 @@ namespace samantha_progpart3 // Ensure this matches your project's namespace
             get { return ReminderDate?.ToShortDateString() ?? "No reminder"; }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected void OnPropertyChanged(string propertyName)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

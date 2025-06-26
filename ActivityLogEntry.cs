@@ -1,12 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace samantha_progpart3
+namespace samantha_progpart3 
 {
-    class ActivityLogEntry
+    public class ActivityLogEntry
     {
+        public DateTime Timestamp { get; set; }
+        public string Description { get; set; } = string.Empty; 
+
+        public override string ToString()
+        {
+            return $"{Timestamp:HH:mm:ss} - {Description}";
+        }
     }
 }

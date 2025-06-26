@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace samantha_progpart3
+namespace samantha_progpart3 
 {
-    class QuizQuestion
+    public class QuizQuestion
     {
+        public string QuestionText { get; set; } = string.Empty; // Initialize to empty string
+        public List<string> Options { get; set; } = new List<string>(); // Initialize to empty list
+        public int CorrectAnswerIndex { get; set; }
     }
 }

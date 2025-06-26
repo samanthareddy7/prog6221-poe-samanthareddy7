@@ -1,14 +1,16 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Media; // For SoundPlayer on Windows
-using System.Linq;
+using System.Media; 
+using System.Linq; 
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel; 
+using System.Windows.Threading;
 
 
 namespace samantha_progpart3
@@ -16,7 +18,7 @@ namespace samantha_progpart3
     public partial class MainWindow : Window
     {
         private string userName = "User"; // Default user name
-        private Dictionary<string, string> userMemory = new Dictionary<string, string>();
+        private Dictionary<string, string> userMemory = new Dictionary<string, string>(); // Enabled user memory
         private string lastProactiveInterestMentioned = null;
         private DateTime lastProactiveMentionTime = DateTime.MinValue;
         private Random randomGenerator = new Random();
@@ -177,13 +179,13 @@ namespace samantha_progpart3
                 else
                 {
                     AddBotMessage("[!] Voice greeting file not found! Please check the path is correct.");
-                    LogActivity("Voice greeting file not found."); // Added LogActivity here
+                    LogActivity("Voice greeting file not found.");
                 }
             }
             catch (Exception ex)
             {
                 AddBotMessage($"[!] Failed to play voice greeting: {ex.Message}");
-                LogActivity($"Error playing voice greeting: {ex.Message}"); // Added LogActivity here
+                LogActivity($"Error playing voice greeting: {ex.Message}");
             }
         }
 
@@ -404,7 +406,7 @@ namespace samantha_progpart3
                 string key = lowerInput.Substring(7).Trim();
                 if (userMemory.ContainsKey(key))
                 {
-                    AddBotMessage($"Encryptonite : You told me your '{key}' is '{userMemory[key]}' 🤖💡.");
+                    AddBotMessage($"Encryptonite : You told me your '{key}' is '{userMemory[key]}'🤖💡.");
                 }
                 else
                 {
@@ -444,13 +446,77 @@ namespace samantha_progpart3
 
 
         // --- Task Assistant Logic ---
-        // Placeholder methods for Task Management
         private void HandleAddTaskCommand(string input)
         {
-            // Placeholder: Will parse and add task later.
-            // For now, just acknowledge.
-            AddBotMessage("Encryptonite : To add a task, type 'Add task - [title] - description [optional description] - reminder [optional date]'.");
-            LogActivity("User attempted to add task (functionality not fully enabled yet).");
+            string taskTitle = "";
+            string taskDescription = "";
+            DateTime? reminderDate = null;
+
+            // Simple parsing: Look for "add task - [title] - description [desc] - reminder [date]"
+            // Or "add task [title]"
+            string lowerInput = input.ToLower();
+            int titleStartIndex = lowerInput.IndexOf("add task") + "add task".Length;
+            if (titleStartIndex < input.Length)
+            {
+                string remainingInput = input.Substring(titleStartIndex).TrimStart('-', ' ');
+
+                int descIndex = remainingInput.IndexOf("description");
+                int reminderIndex = remainingInput.IndexOf("reminder");
+
+                if (descIndex != -1)
+                {
+                    taskTitle = remainingInput.Substring(0, descIndex).TrimEnd('-', ' ');
+                    int descEndIndex = reminderIndex != -1 ? reminderIndex : remainingInput.Length;
+                    taskDescription = remainingInput.Substring(descIndex + "description".Length, descEndIndex - (descIndex + "description".Length)).Trim();
+                }
+                else if (reminderIndex != -1)
+                {
+                    taskTitle = remainingInput.Substring(0, reminderIndex).TrimEnd('-', ' ');
+                }
+                else
+                {
+                    taskTitle = remainingInput;
+                }
+
+                // Try to parse reminder date
+                if (reminderIndex != -1)
+                {
+                    string datePart = remainingInput.Substring(reminderIndex + "reminder".Length).Trim();
+                    if (DateTime.TryParse(datePart, out DateTime parsedDate))
+                    {
+                        reminderDate = parsedDate;
+                    }
+                    else if (datePart.Contains("day")) // "in 3 days"
+                    {
+                        int days;
+                        if (int.TryParse(string.Join("", datePart.Where(char.IsDigit)), out days))
+                        {
+                            reminderDate = DateTime.Now.AddDays(days);
+                        }
+                    }
+                    else if (datePart.Contains("tomorrow"))
+                    {
+                        reminderDate = DateTime.Now.AddDays(1);
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(taskTitle))
+            {
+                AddBotMessage("Encryptonite : I need a title for the task. For example: 'Add task - Review privacy settings'.");
+                LogActivity("Failed to add task: no title provided.");
+                return;
+            }
+
+            // If task description was not explicitly provided by NLP, provide a default one
+            if (string.IsNullOrWhiteSpace(taskDescription))
+            {
+                taskDescription = GetDefaultTaskDescription(taskTitle);
+            }
+
+            AddTask(taskTitle, taskDescription, reminderDate);
+            AddBotMessage($"Task added with the description \"{taskDescription}\". {(reminderDate.HasValue ? $"I'll remind you on {reminderDate.Value.ToShortDateString()}." : "Would you like a reminder?")}");
+            LogActivity($"Task '{taskTitle}' added. Reminder: {reminderDate?.ToShortDateString() ?? "None"}.");
         }
 
         private string GetDefaultTaskDescription(string title)
@@ -473,89 +539,333 @@ namespace samantha_progpart3
 
         private void AddTask_Click(object sender, RoutedEventArgs e)
         {
-            AddBotMessage("Encryptonite : Task adding functionality is not fully active yet. Please use the chat to try 'add task - [title]'.");
-            LogActivity("User attempted GUI task add (functionality not fully enabled yet).");
+            string title = TaskTitleTextBox.Text.Trim();
+            string description = TaskDescriptionTextBox.Text.Trim();
+            DateTime? reminder = ReminderDatePicker.SelectedDate;
+
+            if (string.IsNullOrWhiteSpace(title) || title == "Task Title (e.g., Enable 2FA)")
+            {
+                AddBotMessage("Encryptonite : Please enter a title for the task.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(description) || description == "Description (optional)")
+            {
+                description = GetDefaultTaskDescription(title);
+            }
+
+            AddTask(title, description, reminder);
+            AddBotMessage($"Task '{title}' added! {(reminder.HasValue ? $"I'll remind you on {reminder.Value.ToShortDateString()}." : "")}");
+
+            // Clear input fields and reset placeholder text
+            TaskTitleTextBox.Text = "Task Title (e.g., Enable 2FA)";
+            TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
+            TaskDescriptionTextBox.Text = "Description (optional)";
+            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
+            ReminderDatePicker.SelectedDate = null;
+            LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}.");
         }
 
         private void AddTask(string title, string description, DateTime? reminderDate)
         {
-            // This method will be fully implemented when TaskItem is integrated.
-            // For now, it's just a placeholder to prevent errors.
-            AddBotMessage($"Encryptonite : A task named '{title}' would be added here if task management was fully enabled.");
+            // Ensure title is not empty or placeholder
+            if (string.IsNullOrWhiteSpace(title) || title == "Task Title (e.g., Enable 2FA)")
+            {
+                AddBotMessage("Encryptonite : Task title cannot be empty or the placeholder. Please try again.");
+                return;
+            }
+
+            // Ensure description is not empty or placeholder if it's the only text
+            if (string.IsNullOrWhiteSpace(description) || description == "Description (optional)")
+            {
+                description = GetDefaultTaskDescription(title); // Use default description if empty/placeholder
+            }
+
+            TaskItem newTask = new TaskItem
+            {
+                Title = title,
+                Description = description,
+                ReminderDate = reminderDate,
+                IsCompleted = false
+            };
+            tasks.Add(newTask);
+            RefreshTasksDisplay();
+            LogActivity($"New task added: '{title}'.");
         }
 
         private void HandleSetReminderCommand(string input)
         {
-            AddBotMessage("Encryptonite : Setting reminders is part of task management, which is not fully active yet.");
-            LogActivity("User attempted to set reminder (functionality not fully enabled yet).");
+            // Simplified reminder parsing for demonstration
+            // "remind me to [task] on [date]"
+            string lowerInput = input.ToLower();
+            int reminderIndex = lowerInput.IndexOf("remind me to");
+            if (reminderIndex != -1)
+            {
+                string remainder = input.Substring(reminderIndex + "remind me to".Length).Trim();
+                string taskTitle = remainder;
+                DateTime? reminderDate = null;
+
+                // Look for "on [date]"
+                int onIndex = remainder.IndexOf(" on ");
+                if (onIndex != -1)
+                {
+                    taskTitle = remainder.Substring(0, onIndex).Trim();
+                    string datePart = remainder.Substring(onIndex + " on ".Length).Trim();
+                    if (DateTime.TryParse(datePart, out DateTime parsedDate))
+                    {
+                        reminderDate = parsedDate;
+                    }
+                    else
+                    {
+                        AddBotMessage($"Encryptonite : I couldn't understand the date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
+                        LogActivity($"Failed to set reminder: invalid date format '{datePart}'.");
+                        return;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(taskTitle))
+                {
+                    AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate);
+                    AddBotMessage($"Encryptonite : Okay, I've set a reminder for '{taskTitle}' {(reminderDate.HasValue ? $"on {reminderDate.Value.ToShortDateString()}." : "without a specific date.")}");
+                    LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate?.ToShortDateString() ?? "None"}.");
+                }
+                else
+                {
+                    AddBotMessage("Encryptonite : What should I remind you about?");
+                    LogActivity("Failed to set reminder: no task specified.");
+                }
+            }
         }
 
         private void RefreshTasksDisplay()
         {
-            AddBotMessage("Encryptonite : Task display is not fully active yet.");
-            LogActivity("User requested to view tasks (display not fully enabled yet).");
+            TasksListBox.Items.Refresh(); // Force UI update if properties within TaskItem change (e.g., IsCompleted)
+            LogActivity("Tasks display refreshed.");
         }
 
         private void TaskCompleted_Click(object sender, RoutedEventArgs e)
         {
-            AddBotMessage("Encryptonite : Task completion functionality is not fully active yet.");
-            LogActivity("User attempted to complete task (functionality not fully enabled yet).");
+            CheckBox checkBox = sender as CheckBox;
+            if (checkBox != null && checkBox.DataContext is TaskItem task)
+            {
+                task.IsCompleted = checkBox.IsChecked ?? false;
+                if (task.IsCompleted)
+                {
+                    AddBotMessage($"Encryptonite : Great job! Task '{task.Title}' marked as completed. 🎉");
+                    LogActivity($"Task '{task.Title}' marked as completed.");
+                }
+                else
+                {
+                    AddBotMessage($"Encryptonite : Task '{task.Title}' marked as incomplete.");
+                    LogActivity($"Task '{task.Title}' marked as incomplete.");
+                }
+                RefreshTasksDisplay(); // Ensure UI updates
+            }
         }
 
         private void DeleteTask_Click(object sender, RoutedEventArgs e)
         {
-            AddBotMessage("Encryptonite : Task deletion functionality is not fully active yet.");
-            LogActivity("User attempted to delete task (functionality not fully enabled yet).");
+            Button button = sender as Button;
+            if (button != null && button.DataContext is TaskItem taskToDelete)
+            {
+                tasks.Remove(taskToDelete);
+                AddBotMessage($"Encryptonite : Task '{taskToDelete.Title}' deleted.");
+                LogActivity($"Task '{taskToDelete.Title}' deleted.");
+                RefreshTasksDisplay(); // Ensure UI updates
+            }
         }
 
 
         // --- Quiz Game Logic ---
-        // Placeholder methods for Quiz
         private void LoadQuizQuestions()
         {
-            // Placeholder: Will load questions later.
-            quizQuestions = new List<QuizQuestion>(); // Initialize empty list to prevent null reference
-            AddBotMessage("Encryptonite : Quiz questions will be loaded here when the quiz feature is enabled.");
-            LogActivity("Quiz questions loaded (placeholder).");
+            quizQuestions = new List<QuizQuestion>
+            {
+                new QuizQuestion
+                {
+                    QuestionText = "What is phishing?",
+                    Options = new List<string> { "A type of fishing", "A malicious attempt to obtain sensitive information by disguising as a trustworthy entity", "A cybersecurity software", "A strong password" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What is Two-Factor Authentication (2FA)?",
+                    Options = new List<string> { "Using two different passwords for one account", "A security method that requires two forms of verification to access an account", "A method for encrypting data", "A type of malware" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "Which of these is a characteristic of a strong password?",
+                    Options = new List<string> { "Short and easy to remember", "Contains personal information like your name", "At least 12 characters, including a mix of upper/lowercase letters, numbers, and symbols", "The same password used across multiple accounts" },
+                    CorrectAnswerIndex = 2
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What should you do if you receive a suspicious email asking for your login credentials?",
+                    Options = new List<string> { "Reply immediately asking for more details", "Click on all links to investigate", "Delete it or mark it as spam, and do not click on any links or attachments", "Forward it to all your contacts for awareness" },
+                    CorrectAnswerIndex = 2
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What is malware?",
+                    Options = new List<string> { "Software used for playing games", "Software designed to intentionally cause damage to a computer, server, client, or computer network", "A programming language", "A type of operating system" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What is ransomware?",
+                    Options = new List<string> { "A type of antivirus software", "Malicious software that encrypts your files and demands payment to restore them", "A tool for secure file sharing", "A method for backing up data" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "Which of the following is an example of social engineering?",
+                    Options = new List<string> { "Using a complex firewall", "Phishing", "Implementing strong encryption", "Regular software updates" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What is the primary purpose of a firewall?",
+                    Options = new List<string> { "To speed up internet connection", "To filter network traffic and prevent unauthorized access", "To create strong passwords", "To store data securely" },
+                    CorrectAnswerIndex = 1
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "Why is it important to keep your software updated?",
+                    Options = new List<string> { "To get new features", "To ensure compatibility with new hardware", "To patch security vulnerabilities and improve performance", "To increase battery life" },
+                    CorrectAnswerIndex = 2
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "What does 'HTTPS' in a website URL signify?",
+                    Options = new List<string> { "HyperText Transfer Protocol Standard", "Highly Technical Transfer Protocol Secure", "HyperText Transfer Protocol Secure", "High-Level Text Transfer Protocol System" },
+                    CorrectAnswerIndex = 2
+                }
+            };
+            LogActivity("Quiz questions loaded.");
         }
 
         private void StartQuiz_Click(object sender, RoutedEventArgs e)
         {
-            AddBotMessage("Encryptonite : The quiz functionality is not fully active yet. Type 'start quiz' in chat to initiate it when enabled!");
-            LogActivity("User attempted to start quiz (functionality not fully enabled yet).");
+            currentQuestionIndex = 0;
+            correctAnswersCount = 0;
+            QuizFeedbackTextBlock.Text = "";
+            QuizScoreTextBlock.Text = "";
+            SubmitQuizAnswerButton.IsEnabled = true;
+            StartQuizButton.IsEnabled = false;
+            DisplayQuizQuestion();
+            LogActivity("Quiz started.");
         }
 
         private void DisplayQuizQuestion()
         {
-            // Placeholder: Will display questions later.
-            AddBotMessage("Encryptonite : Quiz questions would be displayed here if the quiz feature was enabled.");
+            if (currentQuestionIndex < quizQuestions.Count)
+            {
+                QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
+                QuizQuestionTextBlock.Text = $"Question {currentQuestionIndex + 1}: {currentQuestion.QuestionText}";
+                QuizOptionsPanel.Children.Clear();
+                currentQuizOptionRadios = new List<RadioButton>();
+
+                for (int i = 0; i < currentQuestion.Options.Count; i++)
+                {
+                    RadioButton optionRadio = new RadioButton
+                    {
+                        Content = currentQuestion.Options[i],
+                        GroupName = "QuizOptions",
+                        Margin = new Thickness(0, 5, 0, 5),
+                        FontSize = 14
+                    };
+                    QuizOptionsPanel.Children.Add(optionRadio);
+                    currentQuizOptionRadios.Add(optionRadio);
+                }
+                LogActivity($"Displayed quiz question {currentQuestionIndex + 1}.");
+            }
+            else
+            {
+                EndQuiz();
+            }
         }
 
         private void SubmitQuizAnswer_Click(object sender, RoutedEventArgs e)
         {
-            AddBotMessage("Encryptonite : Submitting quiz answers is not fully active yet.");
-            LogActivity("User attempted to submit quiz answer (functionality not fully enabled yet).");
+            int selectedAnswerIndex = -1;
+            for (int i = 0; i < currentQuizOptionRadios.Count; i++)
+            {
+                if (currentQuizOptionRadios[i].IsChecked == true)
+                {
+                    selectedAnswerIndex = i;
+                    break;
+                }
+            }
+
+            if (selectedAnswerIndex != -1)
+            {
+                if (selectedAnswerIndex == quizQuestions[currentQuestionIndex].CorrectAnswerIndex)
+                {
+                    correctAnswersCount++;
+                    QuizFeedbackTextBlock.Text = "Correct! ✅";
+                    QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Green);
+                    LogActivity("Quiz answer: Correct.");
+                }
+                else
+                {
+                    QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex]} ❌";
+                    QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Red);
+                    LogActivity("Quiz answer: Incorrect.");
+                }
+                currentQuestionIndex++;
+                // Use Dispatcher.Invoke for UI updates from a non-UI thread (Task.Delay's continuation)
+                Dispatcher.Invoke(() =>
+                {
+                    Task.Delay(1500).ContinueWith(_ =>
+                    {
+                        Dispatcher.Invoke(() => DisplayQuizQuestion());
+                    }, TaskScheduler.FromCurrentSynchronizationContext()); // Ensure continuation runs on UI thread
+                });
+            }
+            else
+            {
+                QuizFeedbackTextBlock.Text = "Please select an answer.";
+                QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Orange);
+                LogActivity("Quiz answer: No selection.");
+            }
         }
 
         private void EndQuiz()
         {
-            AddBotMessage("Encryptonite : Quiz ending functionality is not fully active yet.");
+            QuizQuestionTextBlock.Text = "Quiz Completed!";
+            QuizOptionsPanel.Children.Clear();
+            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. Well done!";
+            QuizScoreTextBlock.Foreground = new SolidColorBrush(Colors.DarkBlue);
+            QuizFeedbackTextBlock.Text = "";
+            SubmitQuizAnswerButton.IsEnabled = false;
+            StartQuizButton.IsEnabled = true;
+            LogActivity($"Quiz ended. Score: {correctAnswersCount}/{quizQuestions.Count}.");
+            AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. You're doing great!");
         }
 
 
         // --- Activity Log Logic ---
-        // Placeholder methods for Activity Log
         private void LogActivity(string description)
         {
-            // This is the only part of LogActivity that needs to be active for now,
-            // even if the full ActivityLogListBox isn't bound yet.
-            Console.WriteLine($"LOG: {DateTime.Now:HH:mm:ss} - {description}");
+            // Remove old entries if exceeding limit
+            if (activityLog.Count >= MaxLogEntries)
+            {
+                // Remove from the beginning to keep the most recent entries
+                activityLog.RemoveAt(0);
+            }
+            activityLog.Add(new ActivityLogEntry { Timestamp = DateTime.Now, Description = description });
+            RefreshActivityLogDisplay();
         }
 
         private void RefreshActivityLogDisplay()
         {
-            AddBotMessage("Encryptonite : Activity log display is not fully active yet.");
-            LogActivity("User requested to view activity log (display not fully enabled yet).");
+            ActivityLogListBox.Items.Refresh(); // Force UI update
+            // Scroll to the bottom of the log to show the latest entry
+            if (activityLog.Count > 0)
+            {
+                ActivityLogListBox.ScrollIntoView(activityLog[activityLog.Count - 1]);
+            }
         }
 
 
@@ -567,7 +877,7 @@ namespace samantha_progpart3
             input = input.ToLower();
             if (input.Contains("happy") || input.Contains("great") || input.Contains("good"))
             {
-                response = "That's wonderful to hear! A positive attitude is a great foundation for learning cybersecurity. 😄";
+                response = "That's wonderful to hear! A positive attitude is a great foundation for learning cybersecurity. �";
                 return true;
             }
             else if (input.Contains("sad") || input.Contains("down") || input.Contains("unhappy"))
