@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -74,7 +75,7 @@ namespace samantha_progpart3
         private void InitializeChatbot()
         {
             DisplayAsciiArt();
-           // Removed PlayVoiceGreeting(); 
+            PlayVoiceGreeting(); 
         }
 
         // Displays ASCII art in the chat panel
@@ -99,11 +100,10 @@ namespace samantha_progpart3
 ");
             AddAsciiArtMessage("╚═════════════════════════════════════════════════════════════╝");
 
-            AddBotMessage("Ready to help you secure your digital life!"); // Normal bot message
+            AddBotMessage("Ready to help you secure your digital life!");
         }
 
-        // Removed PlayVoiceGreeting() method as it's no longer needed.
-        /*
+       
         private void PlayVoiceGreeting()
         {
             try
@@ -124,7 +124,7 @@ namespace samantha_progpart3
                 AddBotMessage($"[!] Failed to play voice greeting: {ex.Message}");
             }
         }
-        */
+        
 
         // Handles Enter key press in the user input textbox for general chat
         private void UserInputTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -156,7 +156,7 @@ namespace samantha_progpart3
         {
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(224, 224, 224)), // #E0E0E0
+                Background = new SolidColorBrush(Color.FromRgb(224, 224, 224)), 
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(8),
                 Margin = new Thickness(5, 2, 5, 2),
@@ -169,7 +169,7 @@ namespace samantha_progpart3
                 Text = message,
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 14,
-                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)) // #333333
+                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)) 
             };
 
             border.Child = textBlock;
@@ -187,7 +187,7 @@ namespace samantha_progpart3
         {
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(220, 248, 198)), // #DCF8C6
+                Background = new SolidColorBrush(Color.FromRgb(220, 248, 198)), 
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(8),
                 Margin = new Thickness(5, 2, 5, 2),
@@ -200,7 +200,7 @@ namespace samantha_progpart3
                 Text = $"{userName}: {message}",
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 14,
-                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)) // #333333
+                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)) 
             };
 
             border.Child = textBlock;
