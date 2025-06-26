@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Media; 
@@ -10,8 +9,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel; 
-using System.Windows.Threading;
-
+using System.Windows.Threading; 
+using System.ComponentModel; 
 
 namespace samantha_progpart3
 {
@@ -31,10 +30,15 @@ namespace samantha_progpart3
         private int currentQuestionIndex = 0;
         private int correctAnswersCount = 0;
         private List<RadioButton> currentQuizOptionRadios;
+        private bool isQuizActiveInChat = false; // State for chat-based quiz
+        private bool awaitingQuizAnswerInChat = false; // State for chat-based quiz answer input
 
         // Activity Log
         private ObservableCollection<ActivityLogEntry> activityLog = new ObservableCollection<ActivityLogEntry>();
         private const int MaxLogEntries = 10; // Limit log display
+
+        // Dictionary for cybersecurity responses - NOW LIST OF STRINGS FOR RANDOM RESPONSES
+        private Dictionary<string, List<string>> _cybersecurityResponses;
 
         public MainWindow()
         {
@@ -49,11 +53,10 @@ namespace samantha_progpart3
             UserInputTextBox.Focus();
 
             // Add placeholder text logic for Task text boxes
-            // Set initial text and foreground color to simulate placeholder
             TaskTitleTextBox.Text = "Task Title (e.g., Enable 2FA)";
-            TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
+            TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
             TaskDescriptionTextBox.Text = "Description (optional)";
-            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
+            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
         }
 
         // Handles focus for placeholder text in Task text boxes
@@ -63,7 +66,7 @@ namespace samantha_progpart3
             if (textBox != null && (textBox.Text == "Task Title (e.g., Enable 2FA)" || textBox.Text == "Description (optional)"))
             {
                 textBox.Text = "";
-                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)); // #333333
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51));
             }
         }
 
@@ -81,7 +84,7 @@ namespace samantha_progpart3
                 {
                     textBox.Text = "Description (optional)";
                 }
-                textBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
             }
         }
 
@@ -134,33 +137,96 @@ namespace samantha_progpart3
         // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
-            DisplayAsciiArt();
+            // Create an instance of the Greeting class and call its DisplayAsciiArt method
+            // Pass the AddAsciiArtMessage, AddBotMessage, and LogActivity methods as actions
+            Greeting greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
+            greeter.DisplayAsciiArt();
+
             PlayVoiceGreeting(); // Enabled voice greeting
-        }
 
-        // Displays ASCII art in the chat panel
-        private void DisplayAsciiArt()
-        {
-            // Using AddAsciiArtMessage for proper monospace rendering and no wrapping
-            AddAsciiArtMessage("╔═════════════════════════════════════════════════════════════╗");
-            AddAsciiArtMessage("║     CYBERSECURITY AWARENESS BOT - 'Encryptonite'            ║");
-            AddAsciiArtMessage("╠═════════════════════════════════════════════════════════════╣");
-            AddAsciiArtMessage(@"
-  _____                                                                 _____ 
- ( ___ )------------------------------------------------------------( ___ )
-  |   |                                                               |   | 
-  |   |  _____                                _           _ _         |   |         |.-----.|
-  |   | | ____|_ __   ___ _ __ _   _ _ __ | |_ ___  _ __ (_) |_ ___  |   |         ||x . x||
-  |   | |  _| | '_ \ / __| '__| | | | '_ \| __/ _ \| '_ \| | __/ _ \ |   |         ||_.-._||
-  |   | | |___| | | | (__| |  | |_| | |_) | || (_) | | | | | ||  __/ |   |         `--)-(--`       
-  |   | |_____|_| |_|\___|_|   \__, | .__/ \__\___/|_| |_|_|\__\___| |   |         __[=== o]___
-  |   |                            |___/|_|                           |   |        |:::::::::::|\
-  |___|                                                               |___|        `-=========-`()
- (_____)------------------------------------------------------------(_____)
-");
-            AddAsciiArtMessage("╚═════════════════════════════════════════════════════════════╝");
-
-            AddBotMessage("Ready to help you secure your digital life!"); // Normal bot message
+            // Initialize cybersecurity responses dictionary directly here with Lists of strings
+            _cybersecurityResponses = new Dictionary<string, List<string>>
+            {
+                { "how are you", new List<string> {
+                    "I am great, thanks for asking ☺️! I’m running smooth and securely 🔐 and ready to help!",
+                    "I am doing excellent in my digital world thanks! 🔒💻",
+                    "Wonderful! and ready to help with your questions!",
+                    "Feeling secure and stable ready to assist you?"
+                }},
+                { "purpose", new List<string> {
+                    "My purpose is to help you understand how to stay safe online 🤺."
+                }},
+                { "scam", new List<string> {
+                    "Always verify a site or sender before clicking anything. Don't give scammers a chance!",
+                    "Scams are like digital traps don't fall for them! 🕳️🐭",
+                    "Always verify links and senders before clicking anything. 🔍📧",
+                    "Scammers want your personal info don't let them have it! 🔒🚫"
+                }},
+                { "what can", new List<string> {
+                    "You can ask me about phishing, passwords, safe browsing, scams, malware and cybersecurity tips 💻."
+                }},
+                { "phishing", new List<string> {
+                    "Phishing tricks you into giving personal info so always check email links before opening them and be aware 🔗!",
+                    "Phishing often pretends to be your biggest 'want' like a shopping desire for free trust no one and nothing without double checking it is from a reliable source.",
+                    "Watch out for emails with urgent requests and dodgy links they could be harmful to your device ! �🚫",
+                    "If a website looks incorrect it probably is, verify first, click later!"
+                }},
+                { "password", new List<string> {
+                    "Strong passwords = strong security make sure your password consists of 12+ characters, mix cases, numbers, symbols 🔒.",
+                    "A strong password is your first defense! Make it long, unique and impossible to guess. 🔐",
+                    "Use a passphrase or a mix of many symbols, numbers, uppercase and lowercase letters.",
+                    "Avoid using '123456' or birthdays or simple names even a toddler can crack that one."
+                }},
+                {"password security", new List<string> {
+                    "Strong passwords = strong security make sure your password consists of 12+ characters, mix cases, numbers, symbols 🔒.",
+                    "A strong password is your first defense! Make it long, unique and impossible to guess. 🔐",
+                    "Use a passphrase or a mix of many symbols, numbers, uppercase and lowercase letters.",
+                    "Avoid using '123456' or birthdays or simple names even a toddler can crack that one."
+                }},
+                { "safe browse", new List<string> {
+                    "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
+                }},
+                { "safe browsing", new List<string> {
+                    "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
+                }},
+                { "malware", new List<string> {
+                    "Malware = bad news 🦠. Protect yourself with antivirus software and updates!"
+                }},
+                { "network security", new List<string> {
+                    "It’s like a digital firewall keeping your connection safe and hacker free 🛡️📡.",
+                    "Network security keeps your data safe as it travels it's kind of like a bodyguard for your Wi-Fi.",
+                    "Strong firewalls and good encryption make your network ninja-proof and safe. 🥷🛡️",
+                    "Unsecured networks = hacker party, make sure you lock it down!"
+                }},
+                { "cybersecurity", new List<string> {
+                    "It’s your digital armour against threats like hackers, scams and malware 🧠🖥️.",
+                    "Cybersecurity is like hygiene but for your devices it keeps them clean,protected and free from nasty things. 🧼🖥️",
+                    "It’s your armor against digital villains so stay patched and protected! So keeping your software updated and your passwords strong is like sharpening your sword in the cyber battle 🛡️",
+                    "Think of cybersecurity as your online seatbelt and buckle up thus it helps protect you from crashes like viruses,phishing scams and hackers that are trying to take control!"
+                }},
+                {"cybersecurity tips", new List<string> {
+                    "It’s your digital armour against threats like hackers, scams and malware 🧠🖥️.",
+                    "Cybersecurity is like hygiene but for your devices it keeps them clean,protected and free from nasty things. 🧼🖥️",
+                    "It’s your armor against digital villains so stay patched and protected! So keeping your software updated and your passwords strong is like sharpening your sword in the cyber battle 🛡️",
+                    "Think of cybersecurity as your online seatbelt and buckle up thus it helps protect you from crashes like viruses,phishing scams and hackers that are trying to take control!"
+                }},
+                {"security advice", new List<string> {
+                    "It’s your digital armour against threats like hackers, scams and malware 🧠🖥️.",
+                    "Cybersecurity is like hygiene but for your devices it keeps them clean,protected and free from nasty things. 🧼🖥️",
+                    "It’s your armor against digital villains so stay patched and protected! So keeping your software updated and your passwords strong is like sharpening your sword in the cyber battle 🛡️",
+                    "Think of cybersecurity as your online seatbelt and buckle up thus it helps protect you from crashes like viruses,phishing scams and hackers that are trying to take control!"
+                }},
+                {"2fa", new List<string> {
+                    "Two-factor authentication (2FA) adds an extra layer of security beyond just a password. It usually involves something you know (password) and something you have (like a code from your phone). Enable it wherever possible!"
+                }},
+                {"two-factor authentication", new List<string> {
+                    "Two-factor authentication (2FA) adds an extra layer of security beyond just a password. It usually involves something you know (password) and something you have (like a code from your phone). Enable it wherever possible!"
+                }},
+                { "help", new List<string> {
+                    "Ask me things about 'phishing?' or 'cybersecurity', 'How to make strong passwords?', or 'What’s safe browsing?' 🧾"
+                }}
+            };
+            LogActivity("Chatbot initialized with cybersecurity responses.");
         }
 
         // Plays a voice greeting sound (Windows-specific)
@@ -278,6 +344,7 @@ namespace samantha_progpart3
             }
         }
 
+        // Adds a message specifically for ASCII art, using a monospace font and no wrapping
         private void AddAsciiArtMessage(string message)
         {
             var textBlock = new TextBlock
@@ -306,13 +373,32 @@ namespace samantha_progpart3
         {
             string lowerInput = input.ToLower();
 
+            // --- IMPORTANT: Check for quiz exit command FIRST ---
+            if (isQuizActiveInChat && (lowerInput.Contains("end quiz") || lowerInput.Contains("stop quiz")))
+            {
+                EndChatQuiz();
+                AddBotMessage($"Encryptonite : Okay, I've ended the quiz. Your final score was {correctAnswersCount} out of {quizQuestions.Count}.");
+                return;
+            }
+
+            // If quiz is active and awaiting an answer in chat
+            if (isQuizActiveInChat && awaitingQuizAnswerInChat)
+            {
+                ProcessChatQuizAnswer(lowerInput);
+                return;
+            }
+
             // Exit commands
             if (lowerInput == "exit" || lowerInput == "quit" || lowerInput == "done" || lowerInput == "bye")
             {
+                // End quiz if active before exiting
+                if (isQuizActiveInChat)
+                {
+                    EndChatQuiz();
+                }
                 AddBotMessage("Encryptonite : Stay safe online, thank you for being here. Goodbye!");
                 LogActivity("Chatbot session ended.");
-                // Optionally close the application
-                // Application.Current.Shutdown();
+                // Application.Current.Shutdown(); // Optionally close the application
                 return;
             }
 
@@ -327,8 +413,8 @@ namespace samantha_progpart3
             {
                 RefreshTasksDisplay();
                 AddBotMessage("Here are your current tasks.");
-                TabControl mainTabControl = (TabControl)FindName("mainTabControl"); // Assuming TabControl is named mainTabControl in XAML
-                if (mainTabControl != null) mainTabControl.SelectedItem = FindName("TasksTabItem"); // Switch to Tasks tab (ensure this TabItem has x:Name="TasksTabItem")
+                TabControl mainTabControl = (TabControl)FindName("mainTabControl");
+                if (mainTabControl != null) mainTabControl.SelectedItem = FindName("TasksTabItem");
                 LogActivity("User requested to view tasks.");
                 return;
             }
@@ -341,21 +427,18 @@ namespace samantha_progpart3
             // Quiz Commands
             if (lowerInput.Contains("start quiz") || lowerInput.Contains("play quiz") || lowerInput.Contains("quiz me"))
             {
-                StartQuiz_Click(null, null);
-                AddBotMessage("Great! Let's start the Cybersecurity Quiz.");
-                TabControl mainTabControl = (TabControl)FindName("mainTabControl"); // Assuming TabControl is named mainTabControl in XAML
-                if (mainTabControl != null) mainTabControl.SelectedItem = FindName("QuizTabItem"); // Switch to Quiz tab (ensure this TabItem has x:Name="QuizTabItem")
-                LogActivity("User started quiz.");
+                StartChatQuiz(); // Call the new chat-based quiz start
                 return;
             }
+
 
             // Activity Log Commands
             if (lowerInput.Contains("show activity log") || lowerInput.Contains("what have you done") || lowerInput.Contains("view log"))
             {
                 RefreshActivityLogDisplay();
                 AddBotMessage("Here's a summary of recent actions:");
-                TabControl mainTabControl = (TabControl)FindName("mainTabControl"); // Assuming TabControl is named mainTabControl in XAML
-                if (mainTabControl != null) mainTabControl.SelectedItem = FindName("ActivityLogTabItem"); // Switch to Activity Log tab (ensure this TabItem has x:Name="ActivityLogTabItem")
+                TabControl mainTabControl = (TabControl)FindName("mainTabControl");
+                if (mainTabControl != null) mainTabControl.SelectedItem = FindName("ActivityLogTabItem");
                 LogActivity("User requested to view activity log.");
                 return;
             }
@@ -377,7 +460,8 @@ namespace samantha_progpart3
             }
 
             // Detects and responds to emotions
-            if (DetectSentiment(lowerInput, out string emotionResponse))
+            string emotionResponse;
+            if (DetectSentiment(lowerInput, out emotionResponse))
             {
                 AddBotMessage($"Encryptonite : {emotionResponse}");
                 LogActivity($"Sentiment detected: {emotionResponse}");
@@ -406,7 +490,7 @@ namespace samantha_progpart3
                 string key = lowerInput.Substring(7).Trim();
                 if (userMemory.ContainsKey(key))
                 {
-                    AddBotMessage($"Encryptonite : You told me your '{key}' is '{userMemory[key]}'🤖💡.");
+                    AddBotMessage($"Encryptonite : You told me your '{key}' is '{userMemory[key]}' 🤖💡.");
                 }
                 else
                 {
@@ -478,7 +562,7 @@ namespace samantha_progpart3
                     taskTitle = remainingInput;
                 }
 
-                // Try to parse reminder date
+                // Try to parse reminder date (local implementation)
                 if (reminderIndex != -1)
                 {
                     string datePart = remainingInput.Substring(reminderIndex + "reminder".Length).Trim();
@@ -497,6 +581,12 @@ namespace samantha_progpart3
                     else if (datePart.Contains("tomorrow"))
                     {
                         reminderDate = DateTime.Now.AddDays(1);
+                    }
+                    if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
+                    {
+                        AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
+                        LogActivity($"Failed to add task via NLP: invalid reminder date '{datePart}'.");
+                        return;
                     }
                 }
             }
@@ -519,6 +609,7 @@ namespace samantha_progpart3
             LogActivity($"Task '{taskTitle}' added. Reminder: {reminderDate?.ToShortDateString() ?? "None"}.");
         }
 
+        // Provides a default description for common cybersecurity tasks
         private string GetDefaultTaskDescription(string title)
         {
             title = title.ToLower();
@@ -537,6 +628,7 @@ namespace samantha_progpart3
             return "General cybersecurity task.";
         }
 
+        // Handles the Add Task button click in the GUI
         private void AddTask_Click(object sender, RoutedEventArgs e)
         {
             string title = TaskTitleTextBox.Text.Trim();
@@ -566,6 +658,7 @@ namespace samantha_progpart3
             LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}.");
         }
 
+        // Adds a new TaskItem to the tasks collection (local implementation)
         private void AddTask(string title, string description, DateTime? reminderDate)
         {
             // Ensure title is not empty or placeholder
@@ -593,6 +686,7 @@ namespace samantha_progpart3
             LogActivity($"New task added: '{title}'.");
         }
 
+        // Handles NLP command for setting a reminder (local implementation)
         private void HandleSetReminderCommand(string input)
         {
             // Simplified reminder parsing for demonstration
@@ -615,7 +709,19 @@ namespace samantha_progpart3
                     {
                         reminderDate = parsedDate;
                     }
-                    else
+                    else if (datePart.Contains("day")) // "in 3 days"
+                    {
+                        int days;
+                        if (int.TryParse(string.Join("", datePart.Where(char.IsDigit)), out days))
+                        {
+                            reminderDate = DateTime.Now.AddDays(days);
+                        }
+                    }
+                    else if (datePart.Contains("tomorrow"))
+                    {
+                        reminderDate = DateTime.Now.AddDays(1);
+                    }
+                    if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
                     {
                         AddBotMessage($"Encryptonite : I couldn't understand the date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
                         LogActivity($"Failed to set reminder: invalid date format '{datePart}'.");
@@ -625,7 +731,7 @@ namespace samantha_progpart3
 
                 if (!string.IsNullOrWhiteSpace(taskTitle))
                 {
-                    AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate);
+                    AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate); // Call local AddTask
                     AddBotMessage($"Encryptonite : Okay, I've set a reminder for '{taskTitle}' {(reminderDate.HasValue ? $"on {reminderDate.Value.ToShortDateString()}." : "without a specific date.")}");
                     LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate?.ToShortDateString() ?? "None"}.");
                 }
@@ -648,7 +754,7 @@ namespace samantha_progpart3
             CheckBox checkBox = sender as CheckBox;
             if (checkBox != null && checkBox.DataContext is TaskItem task)
             {
-                task.IsCompleted = checkBox.IsChecked ?? false;
+                task.IsCompleted = checkBox.IsChecked ?? false; // Direct modification
                 if (task.IsCompleted)
                 {
                     AddBotMessage($"Encryptonite : Great job! Task '{task.Title}' marked as completed. 🎉");
@@ -668,7 +774,7 @@ namespace samantha_progpart3
             Button button = sender as Button;
             if (button != null && button.DataContext is TaskItem taskToDelete)
             {
-                tasks.Remove(taskToDelete);
+                tasks.Remove(taskToDelete); // Direct modification
                 AddBotMessage($"Encryptonite : Task '{taskToDelete.Title}' deleted.");
                 LogActivity($"Task '{taskToDelete.Title}' deleted.");
                 RefreshTasksDisplay(); // Ensure UI updates
@@ -677,6 +783,7 @@ namespace samantha_progpart3
 
 
         // --- Quiz Game Logic ---
+        // Loads predefined quiz questions (local implementation)
         private void LoadQuizQuestions()
         {
             quizQuestions = new List<QuizQuestion>
@@ -684,81 +791,206 @@ namespace samantha_progpart3
                 new QuizQuestion
                 {
                     QuestionText = "What is phishing?",
-                    Options = new List<string> { "A type of fishing", "A malicious attempt to obtain sensitive information by disguising as a trustworthy entity", "A cybersecurity software", "A strong password" },
+                    Options = new List<string> { "A. A type of fishing", "B. A malicious attempt to obtain sensitive information by disguising as a trustworthy entity", "C. A cybersecurity software", "D. A strong password" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What is Two-Factor Authentication (2FA)?",
-                    Options = new List<string> { "Using two different passwords for one account", "A security method that requires two forms of verification to access an account", "A method for encrypting data", "A type of malware" },
+                    Options = new List<string> { "A. Using two different passwords for one account", "B. A security method that requires two forms of verification to access an account", "C. A method for encrypting data", "D. A type of malware" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "Which of these is a characteristic of a strong password?",
-                    Options = new List<string> { "Short and easy to remember", "Contains personal information like your name", "At least 12 characters, including a mix of upper/lowercase letters, numbers, and symbols", "The same password used across multiple accounts" },
+                    Options = new List<string> { "A. Short and easy to remember", "B. Contains personal information like your name", "C. At least 12 characters, including a mix of upper/lowercase letters, numbers, and symbols", "D. The same password used across multiple accounts" },
                     CorrectAnswerIndex = 2
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What should you do if you receive a suspicious email asking for your login credentials?",
-                    Options = new List<string> { "Reply immediately asking for more details", "Click on all links to investigate", "Delete it or mark it as spam, and do not click on any links or attachments", "Forward it to all your contacts for awareness" },
+                    Options = new List<string> { "A. Reply immediately asking for more details", "B. Click on all links to investigate", "C. Delete it or mark it as spam, and do not click on any links or attachments", "D. Forward it to all your contacts for awareness" },
                     CorrectAnswerIndex = 2
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What is malware?",
-                    Options = new List<string> { "Software used for playing games", "Software designed to intentionally cause damage to a computer, server, client, or computer network", "A programming language", "A type of operating system" },
+                    Options = new List<string> { "A. Software used for playing games", "B. Software designed to intentionally cause damage to a computer, server, client, or computer network", "C. A programming language", "D. A type of operating system" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What is ransomware?",
-                    Options = new List<string> { "A type of antivirus software", "Malicious software that encrypts your files and demands payment to restore them", "A tool for secure file sharing", "A method for backing up data" },
+                    Options = new List<string> { "A. A type of antivirus software", "B. Malicious software that encrypts your files and demands payment to restore them", "C. A tool for secure file sharing", "D. A method for backing up data" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "Which of the following is an example of social engineering?",
-                    Options = new List<string> { "Using a complex firewall", "Phishing", "Implementing strong encryption", "Regular software updates" },
+                    Options = new List<string> { "A. Using a complex firewall", "B. Phishing", "C. Implementing strong encryption", "D. Regular software updates" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What is the primary purpose of a firewall?",
-                    Options = new List<string> { "To speed up internet connection", "To filter network traffic and prevent unauthorized access", "To create strong passwords", "To store data securely" },
+                    Options = new List<string> { "A. To speed up internet connection", "B. To filter network traffic and prevent unauthorized access", "C. To create strong passwords", "D. To store data securely" },
                     CorrectAnswerIndex = 1
                 },
                 new QuizQuestion
                 {
                     QuestionText = "Why is it important to keep your software updated?",
-                    Options = new List<string> { "To get new features", "To ensure compatibility with new hardware", "To patch security vulnerabilities and improve performance", "To increase battery life" },
+                    Options = new List<string> { "A. To get new features", "B. To ensure compatibility with new hardware", "C. To patch security vulnerabilities and improve performance", "D. To increase battery life" },
                     CorrectAnswerIndex = 2
                 },
                 new QuizQuestion
                 {
                     QuestionText = "What does 'HTTPS' in a website URL signify?",
-                    Options = new List<string> { "HyperText Transfer Protocol Standard", "Highly Technical Transfer Protocol Secure", "HyperText Transfer Protocol Secure", "High-Level Text Transfer Protocol System" },
+                    Options = new List<string> { "A. HyperText Transfer Protocol Standard", "B. Highly Technical Transfer Protocol Secure", "C. HyperText Transfer Protocol Secure", "D. High-Level Text Transfer Protocol System" },
                     CorrectAnswerIndex = 2
                 }
             };
             LogActivity("Quiz questions loaded.");
         }
 
-        private void StartQuiz_Click(object sender, RoutedEventArgs e)
+        // Starts the quiz game (local implementation)
+        private void StartChatQuiz()
         {
+            if (quizQuestions == null || quizQuestions.Count == 0)
+            {
+                AddBotMessage("Encryptonite : I don't have any quiz questions loaded right now. Please check back later!");
+                return;
+            }
+
+            isQuizActiveInChat = true;
+            awaitingQuizAnswerInChat = true;
             currentQuestionIndex = 0;
             correctAnswersCount = 0;
-            QuizFeedbackTextBlock.Text = "";
-            QuizScoreTextBlock.Text = "";
+            AddBotMessage("Encryptonite : Great! Let's start the Cybersecurity Quiz in the chat. Type A, B, C, or D for your answer.");
+            LogActivity("Chat quiz started.");
+
+            // Also update the visual quiz tab if it exists
+            TabControl mainTabControl = (TabControl)FindName("mainTabControl");
+            if (mainTabControl != null) mainTabControl.SelectedItem = FindName("QuizTabItem");
+            StartQuizButton.IsEnabled = false; // Disable start button on GUI if chat quiz is active
             SubmitQuizAnswerButton.IsEnabled = true;
-            StartQuizButton.IsEnabled = false;
-            DisplayQuizQuestion();
-            LogActivity("Quiz started.");
+
+            DisplayQuizQuestionInChat();
+            DisplayQuizQuestion(); // Also update the GUI quiz display
+        }
+
+        // Method to process quiz answers typed in chat (local implementation)
+        private void ProcessChatQuizAnswer(string userInput)
+        {
+            if (!isQuizActiveInChat || !awaitingQuizAnswerInChat)
+            {
+                return; // Should not happen if state is managed correctly
+            }
+
+            int selectedAnswerIndex = -1;
+            string normalizedInput = userInput.Trim().ToLower();
+
+            // Check for direct A, B, C, D or "answer A"
+            if (normalizedInput == "a" || normalizedInput.Contains("answer a"))
+            {
+                selectedAnswerIndex = 0;
+            }
+            else if (normalizedInput == "b" || normalizedInput.Contains("answer b"))
+            {
+                selectedAnswerIndex = 1;
+            }
+            else if (normalizedInput == "c" || normalizedInput.Contains("answer c"))
+            {
+                selectedAnswerIndex = 2;
+            }
+            else if (normalizedInput == "d" || normalizedInput.Contains("answer d"))
+            {
+                selectedAnswerIndex = 3;
+            }
+            else
+            {
+                AddBotMessage("Encryptonite : Please respond with A, B, C, or D for your answer.");
+                LogActivity("Invalid quiz answer format in chat.");
+                return; // Do not advance question if input is invalid
+            }
+
+            QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
+
+            if (selectedAnswerIndex == currentQuestion.CorrectAnswerIndex)
+            {
+                correctAnswersCount++;
+                AddBotMessage("Encryptonite : Correct! ✅");
+                LogActivity("Chat quiz answer: Correct.");
+            }
+            else
+            {
+                AddBotMessage($"Encryptonite : Incorrect. The correct answer was: {currentQuestion.Options[currentQuestion.CorrectAnswerIndex].Substring(3)} ❌"); // Substring(3) to remove "A. "
+                LogActivity("Chat quiz answer: Incorrect.");
+            }
+
+            currentQuestionIndex++;
+            Task.Delay(1500).ContinueWith(_ =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (currentQuestionIndex < quizQuestions.Count)
+                    {
+                        DisplayQuizQuestionInChat(); // Display next question in chat
+                        DisplayQuizQuestion(); // Update GUI as well
+                    }
+                    else
+                    {
+                        EndChatQuiz(); // End quiz if all questions answered
+                    }
+                });
+            });
+        }
+
+
+        // Method to display quiz question in the main chat area (local implementation)
+        private void DisplayQuizQuestionInChat()
+        {
+            if (currentQuestionIndex < quizQuestions.Count)
+            {
+                QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
+                string questionOutput = $"Encryptonite : \n\nQuestion {currentQuestionIndex + 1}: {currentQuestion.QuestionText}\n";
+                foreach (string option in currentQuestion.Options)
+                {
+                    questionOutput += $"{option}\n";
+                }
+                AddBotMessage(questionOutput);
+                LogActivity($"Displayed quiz question {currentQuestionIndex + 1} in chat.");
+            }
+            // EndQuiz is called by ProcessChatQuizAnswer if all questions are done.
+        }
+
+        // Method to end quiz gracefully in chat (local implementation)
+        private void EndChatQuiz()
+        {
+            isQuizActiveInChat = false;
+            awaitingQuizAnswerInChat = false;
+            AddBotMessage($"Encryptonite : Quiz completed in chat! You scored {correctAnswersCount} out of {quizQuestions.Count}. Well done!");
+            LogActivity($"Chat quiz ended. Final score: {correctAnswersCount}/{quizQuestions.Count}.");
+
+            // Reset GUI quiz state
+            QuizQuestionTextBlock.Text = "Quiz Completed!";
+            QuizOptionsPanel.Children.Clear();
+            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. Well done!";
+            QuizFeedbackTextBlock.Text = "";
+            SubmitQuizAnswerButton.IsEnabled = false;
+            StartQuizButton.IsEnabled = true;
+        }
+
+
+        private void StartQuiz_Click(object sender, RoutedEventArgs e)
+        {
+            // This button now primarily mirrors the chat-based quiz start if not already active.
+            // Or it can be used to restart/start the quiz directly from the tab.
+            StartChatQuiz(); // Re-use the chat-based quiz start logic
         }
 
         private void DisplayQuizQuestion()
         {
+            // This method updates the visual elements on the Quiz tab (local implementation)
             if (currentQuestionIndex < quizQuestions.Count)
             {
                 QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
@@ -778,16 +1010,20 @@ namespace samantha_progpart3
                     QuizOptionsPanel.Children.Add(optionRadio);
                     currentQuizOptionRadios.Add(optionRadio);
                 }
-                LogActivity($"Displayed quiz question {currentQuestionIndex + 1}.");
+                // Ensure submit button is enabled when a question is displayed
+                SubmitQuizAnswerButton.IsEnabled = true;
             }
             else
             {
-                EndQuiz();
+                // This branch handles ending the GUI quiz, it should also call the chat-based end
+                if (isQuizActiveInChat) { EndChatQuiz(); }
+                else { EndQuiz(); } // For cases where quiz might have started only from GUI
             }
         }
 
         private void SubmitQuizAnswer_Click(object sender, RoutedEventArgs e)
         {
+            // This handles submission from the GUI buttons (local implementation)
             int selectedAnswerIndex = -1;
             for (int i = 0; i < currentQuizOptionRadios.Count; i++)
             {
@@ -805,34 +1041,33 @@ namespace samantha_progpart3
                     correctAnswersCount++;
                     QuizFeedbackTextBlock.Text = "Correct! ✅";
                     QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Green);
-                    LogActivity("Quiz answer: Correct.");
+                    LogActivity("GUI Quiz answer: Correct.");
                 }
                 else
                 {
-                    QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex]} ❌";
+                    QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex].Substring(3)} ❌";
                     QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Red);
-                    LogActivity("Quiz answer: Incorrect.");
+                    LogActivity("GUI Quiz answer: Incorrect.");
                 }
                 currentQuestionIndex++;
-                // Use Dispatcher.Invoke for UI updates from a non-UI thread (Task.Delay's continuation)
-                Dispatcher.Invoke(() =>
+                // Give a short delay for feedback before next question
+                Task.Delay(1500).ContinueWith(_ =>
                 {
-                    Task.Delay(1500).ContinueWith(_ =>
-                    {
-                        Dispatcher.Invoke(() => DisplayQuizQuestion());
-                    }, TaskScheduler.FromCurrentSynchronizationContext()); // Ensure continuation runs on UI thread
-                });
+                    Dispatcher.Invoke(() => DisplayQuizQuestion());
+                }, TaskScheduler.FromCurrentSynchronizationContext()); // Ensure UI thread for Dispatcher
             }
             else
             {
                 QuizFeedbackTextBlock.Text = "Please select an answer.";
                 QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Orange);
-                LogActivity("Quiz answer: No selection.");
+                LogActivity("GUI Quiz answer: No selection.");
             }
         }
 
+        // Ends the quiz and displays the final score (local implementation)
         private void EndQuiz()
         {
+            // This is the original EndQuiz for GUI only.
             QuizQuestionTextBlock.Text = "Quiz Completed!";
             QuizOptionsPanel.Children.Clear();
             QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. Well done!";
@@ -844,8 +1079,8 @@ namespace samantha_progpart3
             AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. You're doing great!");
         }
 
-
         // --- Activity Log Logic ---
+        // Logs an activity with a timestamp (local implementation)
         private void LogActivity(string description)
         {
             // Remove old entries if exceeding limit
@@ -858,18 +1093,18 @@ namespace samantha_progpart3
             RefreshActivityLogDisplay();
         }
 
+        // Refreshes the display of the activity log (local implementation)
         private void RefreshActivityLogDisplay()
         {
             ActivityLogListBox.Items.Refresh(); // Force UI update
             // Scroll to the bottom of the log to show the latest entry
-            if (activityLog.Count > 0)
+            if (ActivityLogListBox.Items.Count > 0)
             {
-                ActivityLogListBox.ScrollIntoView(activityLog[activityLog.Count - 1]);
+                ActivityLogListBox.ScrollIntoView(ActivityLogListBox.Items[ActivityLogListBox.Items.Count - 1]);
             }
         }
 
-
-        // --- NLP Simulation Methods (from original bot logic) ---
+        // --- NLP Simulation Methods (local implementation) ---
 
         // Detects sentiment in user input and provides a corresponding response
         private bool DetectSentiment(string input, out string response)
@@ -877,7 +1112,7 @@ namespace samantha_progpart3
             input = input.ToLower();
             if (input.Contains("happy") || input.Contains("great") || input.Contains("good"))
             {
-                response = "That's wonderful to hear! A positive attitude is a great foundation for learning cybersecurity. �";
+                response = "That's wonderful to hear! A positive attitude is a great foundation for learning cybersecurity. 😄";
                 return true;
             }
             else if (input.Contains("sad") || input.Contains("down") || input.Contains("unhappy"))
@@ -894,41 +1129,22 @@ namespace samantha_progpart3
             return false;
         }
 
-        // Provides a relevant chatbot response based on user input keywords (full version)
+        // Provides a relevant chatbot response based on user input keywords (using dictionary)
         private string GetBotResponse(string lowerInput)
         {
-            // Cybersecurity Topic Responses
-            if (lowerInput.Contains("phishing"))
+            // Try to get response from dictionary first
+            // Iterate through the dictionary to find if any key is contained in the input
+            foreach (var entry in _cybersecurityResponses)
             {
-                return "Phishing is a cybercrime where scammers use deceptive emails, messages, or websites to trick you into revealing personal information like passwords or credit card numbers. Always check the sender and look for red flags!";
-            }
-            else if (lowerInput.Contains("passwords") || lowerInput.Contains("password security"))
-            {
-                return "Strong passwords are crucial! Use a mix of uppercase and lowercase letters, numbers, and symbols. Make them at least 12 characters long and unique for each account. Consider using a password manager.";
-            }
-            else if (lowerInput.Contains("safe browse") || lowerInput.Contains("safe browsing"))
-            {
-                return "Always check if a website uses HTTPS (look for the padlock icon in the address bar). Be cautious of pop-ups and unsolicited downloads. Use a reputable antivirus and keep your browser updated.";
-            }
-            else if (lowerInput.Contains("scams"))
-            {
-                return "Online scams come in many forms, from fake lottery wins to tech support scams. If something sounds too good to be true, it probably is. Verify offers independently and never give out personal info to unverified sources.";
-            }
-            else if (lowerInput.Contains("malware"))
-            {
-                return "Malware is malicious software like viruses, worms, and ransomware. It can infect your devices, steal data, or disrupt operations. Keep your software updated, use antivirus, and be careful about what you download or open.";
-            }
-            else if (lowerInput.Contains("network security"))
-            {
-                return "Network security involves protecting your computer network from unauthorized access. Use strong Wi-Fi passwords, enable WPA2/WPA3 encryption, and consider using a VPN, especially on public Wi-Fi.";
-            }
-            else if (lowerInput.Contains("cybersecurity tips") || lowerInput.Contains("security advice"))
-            {
-                return "Here are some quick tips: Use strong, unique passwords; enable 2FA; be wary of suspicious links; keep software updated; back up your data; and learn to recognize phishing attempts.";
-            }
-            else if (lowerInput.Contains("2fa") || lowerInput.Contains("two-factor authentication"))
-            {
-                return "Two-factor authentication (2FA) adds an extra layer of security beyond just a password. It usually involves something you know (password) and something you have (like a code from your phone). Enable it wherever possible!";
+                if (lowerInput.Contains(entry.Key))
+                {
+                    // Select a random response from the list
+                    List<string> responses = entry.Value;
+                    if (responses != null && responses.Count > 0)
+                    {
+                        return responses[randomGenerator.Next(responses.Count)];
+                    }
+                }
             }
 
             // Proactive suggestions based on time or history (simple simulation)
@@ -951,7 +1167,7 @@ namespace samantha_progpart3
                 "I'm not sure I understand. Could you please rephrase?",
                 "Could you tell me more about what you're looking for?",
                 "Hmm, I need a little more information. What topic are you interested in?",
-                "Please ask me a question related to cyber safety."
+                "I am here to help you understand cybersecurity. Please ask me a question related to cyber safety."
             };
             return defaultResponses[randomGenerator.Next(defaultResponses.Length)];
         }
