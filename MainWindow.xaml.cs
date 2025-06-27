@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
-using System.Collections.ObjectModel; 
+using System.Collections.ObjectModel;
 using System.Windows.Threading; 
 using System.ComponentModel; 
 
@@ -33,11 +33,9 @@ namespace samantha_progpart3
         private bool isQuizActiveInChat = false; // State for chat-based quiz
         private bool awaitingQuizAnswerInChat = false; // State for chat-based quiz answer input
 
-        // Activity Log
         private ObservableCollection<ActivityLogEntry> activityLog = new ObservableCollection<ActivityLogEntry>();
-        private const int MaxLogEntries = 10; // Limit log display
 
-        // Dictionary for cybersecurity responses - NOW LIST OF STRINGS FOR RANDOM RESPONSES
+        // Dictionary for cybersecurity responses 
         private Dictionary<string, List<string>> _cybersecurityResponses;
 
         public MainWindow()
@@ -46,7 +44,7 @@ namespace samantha_progpart3
             InitializeChatbot();
             LoadQuizQuestions(); // Load quiz questions at startup
             TasksListBox.ItemsSource = tasks; // Bind ListBox to ObservableCollection
-            ActivityLogListBox.ItemsSource = activityLog; // Bind Activity Log ListBox
+            ActivityLogListBox.ItemsSource = activityLog; // Bind Activity Log ListBox (now displaying all entries)
             RefreshTasksDisplay(); // Display any pre-loaded tasks (if implementing persistence)
             LogActivity("Chatbot initialized.");
             SimulateGreeting();
@@ -56,8 +54,7 @@ namespace samantha_progpart3
             TaskTitleTextBox.Text = "Task Title (e.g., Enable 2FA)";
             TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
             TaskDescriptionTextBox.Text = "Description (optional)";
-            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
-        }
+            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));         }
 
         // Handles focus for placeholder text in Task text boxes
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
@@ -66,7 +63,7 @@ namespace samantha_progpart3
             if (textBox != null && (textBox.Text == "Task Title (e.g., Enable 2FA)" || textBox.Text == "Description (optional)"))
             {
                 textBox.Text = "";
-                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)); // #333333
             }
         }
 
@@ -137,8 +134,7 @@ namespace samantha_progpart3
         // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
-            // Create an instance of the Greeting class and call its DisplayAsciiArt method
-            // Pass the AddAsciiArtMessage, AddBotMessage, and LogActivity methods as actions
+            
             Greeting greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
             greeter.DisplayAsciiArt();
 
@@ -168,7 +164,7 @@ namespace samantha_progpart3
                 { "phishing", new List<string> {
                     "Phishing tricks you into giving personal info so always check email links before opening them and be aware 🔗!",
                     "Phishing often pretends to be your biggest 'want' like a shopping desire for free trust no one and nothing without double checking it is from a reliable source.",
-                    "Watch out for emails with urgent requests and dodgy links they could be harmful to your device ! �🚫",
+                    "Watch out for emails with urgent requests and dodgy links they could be harmful to your device ! 🐟🚫",
                     "If a website looks incorrect it probably is, verify first, click later!"
                 }},
                 { "password", new List<string> {
@@ -184,7 +180,7 @@ namespace samantha_progpart3
                     "Avoid using '123456' or birthdays or simple names even a toddler can crack that one."
                 }},
                 { "safe browse", new List<string> {
-                    "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
+                    "Use HTTPS sites, avoid popups, and never download shady files �🚫🕷️."
                 }},
                 { "safe browsing", new List<string> {
                     "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
@@ -234,9 +230,8 @@ namespace samantha_progpart3
         {
             try
             {
-                // Ensure Progsound.wav is in your project's root directory and
-                // its 'Copy to Output Directory' property is set to 'Copy if newer'.
-                string filePath = "Progsound.wav"; // Corrected to match "Progsound.wav" (capital P)
+               
+                string filePath = "Progsound.wav";
                 if (File.Exists(filePath))
                 {
                     System.Media.SoundPlayer player = new System.Media.SoundPlayer(filePath);
@@ -273,7 +268,7 @@ namespace samantha_progpart3
             if (string.IsNullOrWhiteSpace(input))
             {
                 AddBotMessage("Encryptonite : I did not quite understand that, can you please rephrase?");
-                LogActivity("Empty user input.");
+                LogActivity("Empty user input."); // Log this specific event
                 return;
             }
 
@@ -310,7 +305,7 @@ namespace samantha_progpart3
             {
                 scrollViewer.ScrollToEnd();
             }
-            LogActivity($"Bot response: '{message}'");
+            // Removed direct LogActivity call from here to prevent recursive logging
         }
 
         // Adds a message from the user to the chat display
@@ -364,7 +359,7 @@ namespace samantha_progpart3
             {
                 scrollViewer.ScrollToEnd();
             }
-            LogActivity($"Displayed ASCII art.");
+            LogActivity($"Displayed ASCII art."); // This specific log is fine, it logs the action of displaying ASCII art itself.
         }
 
 
@@ -378,6 +373,7 @@ namespace samantha_progpart3
             {
                 EndChatQuiz();
                 AddBotMessage($"Encryptonite : Okay, I've ended the quiz. Your final score was {correctAnswersCount} out of {quizQuestions.Count}.");
+                LogActivity("User ended quiz prematurely."); // Log this specific event
                 return;
             }
 
@@ -415,7 +411,7 @@ namespace samantha_progpart3
                 AddBotMessage("Here are your current tasks.");
                 TabControl mainTabControl = (TabControl)FindName("mainTabControl");
                 if (mainTabControl != null) mainTabControl.SelectedItem = FindName("TasksTabItem");
-                LogActivity("User requested to view tasks.");
+                LogActivity("User requested to view tasks."); // Log this specific event
                 return;
             }
             if (lowerInput.Contains("remind me to") || lowerInput.Contains("set a reminder"))
@@ -435,11 +431,19 @@ namespace samantha_progpart3
             // Activity Log Commands
             if (lowerInput.Contains("show activity log") || lowerInput.Contains("what have you done") || lowerInput.Contains("view log"))
             {
-                RefreshActivityLogDisplay();
-                AddBotMessage("Here's a summary of recent actions:");
+                RefreshActivityLogDisplay(); // Always update the log tab first
+                AddBotMessage("Here's a summary of recent actions:"); // Initial message before detailed log in chat
+                DisplayRecentActivityInChat(); // Now display in chat as well (limited to 5 for conciseness)
                 TabControl mainTabControl = (TabControl)FindName("mainTabControl");
                 if (mainTabControl != null) mainTabControl.SelectedItem = FindName("ActivityLogTabItem");
-                LogActivity("User requested to view activity log.");
+                LogActivity("User requested to view full activity log and recent log in chat."); // Log this specific event
+                return;
+            }
+            // Keeping "show recent activity" as a separate command if the user just wants the chat output
+            if (lowerInput.Contains("show recent activity") || lowerInput.Contains("recent log"))
+            {
+                DisplayRecentActivityInChat(); // This only displays in chat, no tab switch
+                LogActivity("User requested to view recent activity in chat."); // Log this specific event
                 return;
             }
 
@@ -450,12 +454,13 @@ namespace samantha_progpart3
                 if (userMemory.ContainsKey(key))
                 {
                     AddBotMessage($"Encryptonite : Your {key} is {userMemory[key]}! 🧠✨");
+                    LogActivity($"User inquired about '{key}' from memory (found)."); // Log this specific event
                 }
                 else
                 {
                     AddBotMessage($"Encryptonite : I don't seem to know your {key} yet 🤔. Maybe tell me?");
+                    LogActivity($"User inquired about '{key}' from memory (not found)."); // Log this specific event
                 }
-                LogActivity($"User inquired about '{key}' from memory.");
                 return;
             }
 
@@ -464,7 +469,7 @@ namespace samantha_progpart3
             if (DetectSentiment(lowerInput, out emotionResponse))
             {
                 AddBotMessage($"Encryptonite : {emotionResponse}");
-                LogActivity($"Sentiment detected: {emotionResponse}");
+                LogActivity($"Sentiment detected: {emotionResponse}"); // Log this specific event
                 return;
             }
 
@@ -479,7 +484,7 @@ namespace samantha_progpart3
                 {
                     userMemory[key] = value;
                     AddBotMessage($"Encryptonite : Got it! I'll remember your {key} is {value} 🧠💾.");
-                    LogActivity($"Memorized '{key}': '{value}'.");
+                    LogActivity($"Memorized '{key}': '{value}'."); // Log this specific event
                     return;
                 }
             }
@@ -491,12 +496,13 @@ namespace samantha_progpart3
                 if (userMemory.ContainsKey(key))
                 {
                     AddBotMessage($"Encryptonite : You told me your '{key}' is '{userMemory[key]}' 🤖💡.");
+                    LogActivity($"User requested recall for '{key}' (found)."); // Log this specific event
                 }
                 else
                 {
                     AddBotMessage($"Encryptonite : Hmm... I don't remember anything about '{key}' 🧐.");
+                    LogActivity($"User requested recall for '{key}' (not found)."); // Log this specific event
                 }
-                LogActivity($"User requested recall for '{key}'.");
                 return;
             }
 
@@ -504,7 +510,7 @@ namespace samantha_progpart3
             if (int.TryParse(input, out int justNumber))
             {
                 AddBotMessage($"Nice, you entered the number: {justNumber}. Numbers help make passwords harder to guess!");
-                LogActivity($"User entered number: {justNumber}.");
+                LogActivity($"User entered number: {justNumber}."); // Log this specific event
                 return;
             }
             if (lowerInput.StartsWith("number "))
@@ -513,19 +519,20 @@ namespace samantha_progpart3
                 if (int.TryParse(numberPart, out int result))
                 {
                     AddBotMessage($"Sweet! You entered the number: {result}. Numbers can be useful in passwords as they help to strengthen them.");
+                    LogActivity($"User tried to enter 'number {numberPart}' (valid)."); // Log this specific event
                 }
                 else
                 {
                     AddBotMessage("Hmm, that is not a valid number. Try entering a valid number.");
+                    LogActivity($"User tried to enter 'number {numberPart}' (invalid)."); // Log this specific event
                 }
-                LogActivity($"User tried to enter 'number {numberPart}'.");
                 return;
             }
 
             // Standard Bot Response
             string botResponse = GetBotResponse(lowerInput);
             AddBotMessage($"Encryptonite : {botResponse}");
-            LogActivity($"General bot response: '{botResponse}'");
+            LogActivity($"General bot response: '{botResponse}'"); // Log this specific event
         }
 
 
@@ -585,7 +592,7 @@ namespace samantha_progpart3
                     if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
                     {
                         AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
-                        LogActivity($"Failed to add task via NLP: invalid reminder date '{datePart}'.");
+                        LogActivity($"Failed to add task via NLP: invalid reminder date '{datePart}'."); // Log this specific event
                         return;
                     }
                 }
@@ -594,7 +601,7 @@ namespace samantha_progpart3
             if (string.IsNullOrWhiteSpace(taskTitle))
             {
                 AddBotMessage("Encryptonite : I need a title for the task. For example: 'Add task - Review privacy settings'.");
-                LogActivity("Failed to add task: no title provided.");
+                LogActivity("Failed to add task: no title provided."); // Log this specific event
                 return;
             }
 
@@ -606,7 +613,7 @@ namespace samantha_progpart3
 
             AddTask(taskTitle, taskDescription, reminderDate);
             AddBotMessage($"Task added with the description \"{taskDescription}\". {(reminderDate.HasValue ? $"I'll remind you on {reminderDate.Value.ToShortDateString()}." : "Would you like a reminder?")}");
-            LogActivity($"Task '{taskTitle}' added. Reminder: {reminderDate?.ToShortDateString() ?? "None"}.");
+            LogActivity($"Task '{taskTitle}' added. Reminder: {reminderDate?.ToShortDateString() ?? "None"}."); // Log this specific event
         }
 
         // Provides a default description for common cybersecurity tasks
@@ -638,6 +645,7 @@ namespace samantha_progpart3
             if (string.IsNullOrWhiteSpace(title) || title == "Task Title (e.g., Enable 2FA)")
             {
                 AddBotMessage("Encryptonite : Please enter a title for the task.");
+                LogActivity("Failed to add task via GUI: no title provided."); // Log this specific event
                 return;
             }
 
@@ -655,7 +663,7 @@ namespace samantha_progpart3
             TaskDescriptionTextBox.Text = "Description (optional)";
             TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
             ReminderDatePicker.SelectedDate = null;
-            LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}.");
+            LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}."); // Log this specific event
         }
 
         // Adds a new TaskItem to the tasks collection (local implementation)
@@ -665,6 +673,7 @@ namespace samantha_progpart3
             if (string.IsNullOrWhiteSpace(title) || title == "Task Title (e.g., Enable 2FA)")
             {
                 AddBotMessage("Encryptonite : Task title cannot be empty or the placeholder. Please try again.");
+                LogActivity("AddTask method called with empty/placeholder title."); // Log this specific event
                 return;
             }
 
@@ -683,7 +692,7 @@ namespace samantha_progpart3
             };
             tasks.Add(newTask);
             RefreshTasksDisplay();
-            LogActivity($"New task added: '{title}'.");
+            LogActivity($"New task added: '{title}'."); // Log this specific event
         }
 
         // Handles NLP command for setting a reminder (local implementation)
@@ -723,8 +732,8 @@ namespace samantha_progpart3
                     }
                     if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
                     {
-                        AddBotMessage($"Encryptonite : I couldn't understand the date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
-                        LogActivity($"Failed to set reminder: invalid date format '{datePart}'.");
+                        AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
+                        LogActivity($"Failed to set reminder: invalid date format '{datePart}'."); // Log this specific event
                         return;
                     }
                 }
@@ -733,12 +742,12 @@ namespace samantha_progpart3
                 {
                     AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate); // Call local AddTask
                     AddBotMessage($"Encryptonite : Okay, I've set a reminder for '{taskTitle}' {(reminderDate.HasValue ? $"on {reminderDate.Value.ToShortDateString()}." : "without a specific date.")}");
-                    LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate?.ToShortDateString() ?? "None"}.");
+                    LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate?.ToShortDateString() ?? "None"}."); // Log this specific event
                 }
                 else
                 {
                     AddBotMessage("Encryptonite : What should I remind you about?");
-                    LogActivity("Failed to set reminder: no task specified.");
+                    LogActivity("Failed to set reminder: no task specified."); // Log this specific event
                 }
             }
         }
@@ -746,7 +755,7 @@ namespace samantha_progpart3
         private void RefreshTasksDisplay()
         {
             TasksListBox.Items.Refresh(); // Force UI update if properties within TaskItem change (e.g., IsCompleted)
-            LogActivity("Tasks display refreshed.");
+            LogActivity("Tasks display refreshed."); // Log this specific event
         }
 
         private void TaskCompleted_Click(object sender, RoutedEventArgs e)
@@ -758,12 +767,12 @@ namespace samantha_progpart3
                 if (task.IsCompleted)
                 {
                     AddBotMessage($"Encryptonite : Great job! Task '{task.Title}' marked as completed. 🎉");
-                    LogActivity($"Task '{task.Title}' marked as completed.");
+                    LogActivity($"Task '{task.Title}' marked as completed."); // Log this specific event
                 }
                 else
                 {
                     AddBotMessage($"Encryptonite : Task '{task.Title}' marked as incomplete.");
-                    LogActivity($"Task '{task.Title}' marked as incomplete.");
+                    LogActivity($"Task '{task.Title}' marked as incomplete."); // Log this specific event
                 }
                 RefreshTasksDisplay(); // Ensure UI updates
             }
@@ -776,7 +785,7 @@ namespace samantha_progpart3
             {
                 tasks.Remove(taskToDelete); // Direct modification
                 AddBotMessage($"Encryptonite : Task '{taskToDelete.Title}' deleted.");
-                LogActivity($"Task '{taskToDelete.Title}' deleted.");
+                LogActivity($"Task '{taskToDelete.Title}' deleted."); // Log this specific event
                 RefreshTasksDisplay(); // Ensure UI updates
             }
         }
@@ -849,7 +858,7 @@ namespace samantha_progpart3
                     CorrectAnswerIndex = 2
                 }
             };
-            LogActivity("Quiz questions loaded.");
+            LogActivity("Quiz questions loaded."); // Log this specific event
         }
 
         // Starts the quiz game (local implementation)
@@ -858,6 +867,7 @@ namespace samantha_progpart3
             if (quizQuestions == null || quizQuestions.Count == 0)
             {
                 AddBotMessage("Encryptonite : I don't have any quiz questions loaded right now. Please check back later!");
+                LogActivity("Attempted to start quiz, but no questions loaded."); // Log this specific event
                 return;
             }
 
@@ -866,7 +876,7 @@ namespace samantha_progpart3
             currentQuestionIndex = 0;
             correctAnswersCount = 0;
             AddBotMessage("Encryptonite : Great! Let's start the Cybersecurity Quiz in the chat. Type A, B, C, or D for your answer.");
-            LogActivity("Chat quiz started.");
+            LogActivity("Chat quiz started."); // Log this specific event
 
             // Also update the visual quiz tab if it exists
             TabControl mainTabControl = (TabControl)FindName("mainTabControl");
@@ -909,7 +919,7 @@ namespace samantha_progpart3
             else
             {
                 AddBotMessage("Encryptonite : Please respond with A, B, C, or D for your answer.");
-                LogActivity("Invalid quiz answer format in chat.");
+                LogActivity("Invalid quiz answer format in chat."); // Log this specific event
                 return; // Do not advance question if input is invalid
             }
 
@@ -919,12 +929,12 @@ namespace samantha_progpart3
             {
                 correctAnswersCount++;
                 AddBotMessage("Encryptonite : Correct! ✅");
-                LogActivity("Chat quiz answer: Correct.");
+                LogActivity("Chat quiz answer: Correct."); // Log this specific event
             }
             else
             {
                 AddBotMessage($"Encryptonite : Incorrect. The correct answer was: {currentQuestion.Options[currentQuestion.CorrectAnswerIndex].Substring(3)} ❌"); // Substring(3) to remove "A. "
-                LogActivity("Chat quiz answer: Incorrect.");
+                LogActivity("Chat quiz answer: Incorrect."); // Log this specific event
             }
 
             currentQuestionIndex++;
@@ -958,7 +968,7 @@ namespace samantha_progpart3
                     questionOutput += $"{option}\n";
                 }
                 AddBotMessage(questionOutput);
-                LogActivity($"Displayed quiz question {currentQuestionIndex + 1} in chat.");
+                LogActivity($"Displayed quiz question {currentQuestionIndex + 1} in chat."); // Log this specific event
             }
             // EndQuiz is called by ProcessChatQuizAnswer if all questions are done.
         }
@@ -969,7 +979,7 @@ namespace samantha_progpart3
             isQuizActiveInChat = false;
             awaitingQuizAnswerInChat = false;
             AddBotMessage($"Encryptonite : Quiz completed in chat! You scored {correctAnswersCount} out of {quizQuestions.Count}. Well done!");
-            LogActivity($"Chat quiz ended. Final score: {correctAnswersCount}/{quizQuestions.Count}.");
+            LogActivity($"Chat quiz ended. Final score: {correctAnswersCount}/{quizQuestions.Count}."); // Log this specific event
 
             // Reset GUI quiz state
             QuizQuestionTextBlock.Text = "Quiz Completed!";
@@ -1041,13 +1051,13 @@ namespace samantha_progpart3
                     correctAnswersCount++;
                     QuizFeedbackTextBlock.Text = "Correct! ✅";
                     QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Green);
-                    LogActivity("GUI Quiz answer: Correct.");
+                    LogActivity("GUI Quiz answer: Correct."); // Log this specific event
                 }
                 else
                 {
                     QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex].Substring(3)} ❌";
                     QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Red);
-                    LogActivity("GUI Quiz answer: Incorrect.");
+                    LogActivity("GUI Quiz answer: Incorrect."); // Log this specific event
                 }
                 currentQuestionIndex++;
                 // Give a short delay for feedback before next question
@@ -1060,7 +1070,7 @@ namespace samantha_progpart3
             {
                 QuizFeedbackTextBlock.Text = "Please select an answer.";
                 QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Orange);
-                LogActivity("GUI Quiz answer: No selection.");
+                LogActivity("GUI Quiz answer: No selection."); // Log this specific event
             }
         }
 
@@ -1075,7 +1085,7 @@ namespace samantha_progpart3
             QuizFeedbackTextBlock.Text = "";
             SubmitQuizAnswerButton.IsEnabled = false;
             StartQuizButton.IsEnabled = true;
-            LogActivity($"Quiz ended. Score: {correctAnswersCount}/{quizQuestions.Count}.");
+            LogActivity($"Quiz ended. Score: {correctAnswersCount}/{quizQuestions.Count}."); // Log this specific event
             AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. You're doing great!");
         }
 
@@ -1083,12 +1093,7 @@ namespace samantha_progpart3
         // Logs an activity with a timestamp (local implementation)
         private void LogActivity(string description)
         {
-            // Remove old entries if exceeding limit
-            if (activityLog.Count >= MaxLogEntries)
-            {
-                // Remove from the beginning to keep the most recent entries
-                activityLog.RemoveAt(0);
-            }
+            // No longer checking for MaxLogEntries here, activityLog will now store all.
             activityLog.Add(new ActivityLogEntry { Timestamp = DateTime.Now, Description = description });
             RefreshActivityLogDisplay();
         }
@@ -1103,6 +1108,27 @@ namespace samantha_progpart3
                 ActivityLogListBox.ScrollIntoView(ActivityLogListBox.Items[ActivityLogListBox.Items.Count - 1]);
             }
         }
+
+        // Displays the most recent activity log entries in the main chat area
+        private void DisplayRecentActivityInChat()
+        {
+            if (activityLog.Count == 0)
+            {
+                AddBotMessage("Encryptonite : There is no recent activity to display yet.");
+                LogActivity("Attempted to display recent activity in chat, but log is empty."); // Log this specific event
+                return;
+            }
+
+            // Get the 5 most recent entries, ensuring the latest are displayed at the bottom of the block
+            var recentEntries = activityLog.Reverse().Take(5).Reverse().ToList();
+
+            foreach (var entry in recentEntries)
+            {
+                AddBotMessage($"  [{entry.Timestamp:HH:mm:ss}] {entry.Description}");
+            }
+            LogActivity("Displayed recent activity in chat."); // Log this specific event
+        }
+
 
         // --- NLP Simulation Methods (local implementation) ---
 
