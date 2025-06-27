@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Media; 
-using System.Linq; 
+using System.Media; // For SoundPlayer on Windows
+using System.Linq; // Required for .Where(char.IsDigit) and .Take()
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
-using System.Collections.ObjectModel;
-using System.Windows.Threading; 
-using System.ComponentModel; 
+using System.Collections.ObjectModel; // For ObservableCollection
+using System.Windows.Threading; // Required for Dispatcher.Invoke
+using System.ComponentModel; // Required for INotifyPropertyChanged in TaskItem
 
 namespace samantha_progpart3
 {
@@ -33,9 +33,9 @@ namespace samantha_progpart3
         private bool isQuizActiveInChat = false; // State for chat-based quiz
         private bool awaitingQuizAnswerInChat = false; // State for chat-based quiz answer input
 
+        
         private ObservableCollection<ActivityLogEntry> activityLog = new ObservableCollection<ActivityLogEntry>();
 
-        // Dictionary for cybersecurity responses 
         private Dictionary<string, List<string>> _cybersecurityResponses;
 
         public MainWindow()
@@ -52,9 +52,10 @@ namespace samantha_progpart3
 
             // Add placeholder text logic for Task text boxes
             TaskTitleTextBox.Text = "Task Title (e.g., Enable 2FA)";
-            TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
+            TaskTitleTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
             TaskDescriptionTextBox.Text = "Description (optional)";
-            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));         }
+            TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
+        }
 
         // Handles focus for placeholder text in Task text boxes
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
@@ -81,7 +82,7 @@ namespace samantha_progpart3
                 {
                     textBox.Text = "Description (optional)";
                 }
-                textBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); 
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153)); // #999999
             }
         }
 
@@ -134,13 +135,12 @@ namespace samantha_progpart3
         // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
-            
+           
             Greeting greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
             greeter.DisplayAsciiArt();
 
             PlayVoiceGreeting(); // Enabled voice greeting
 
-            // Initialize cybersecurity responses dictionary directly here with Lists of strings
             _cybersecurityResponses = new Dictionary<string, List<string>>
             {
                 { "how are you", new List<string> {
@@ -180,7 +180,7 @@ namespace samantha_progpart3
                     "Avoid using '123456' or birthdays or simple names even a toddler can crack that one."
                 }},
                 { "safe browse", new List<string> {
-                    "Use HTTPS sites, avoid popups, and never download shady files �🚫🕷️."
+                    "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
                 }},
                 { "safe browsing", new List<string> {
                     "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
@@ -230,8 +230,9 @@ namespace samantha_progpart3
         {
             try
             {
-               
-                string filePath = "Progsound.wav";
+                // Ensure Progsound.wav is in your project's root directory and
+                // its 'Copy to Output Directory' property is set to 'Copy if newer'.
+                string filePath = "Progsound.wav"; // Corrected to match "Progsound.wav" (capital P)
                 if (File.Exists(filePath))
                 {
                     System.Media.SoundPlayer player = new System.Media.SoundPlayer(filePath);
@@ -797,6 +798,26 @@ namespace samantha_progpart3
         {
             quizQuestions = new List<QuizQuestion>
             {
+                // True/False Questions (3 total)
+                new QuizQuestion
+                {
+                    QuestionText = "True or False: Regularly updating your software protects against known vulnerabilities.",
+                    Options = new List<string> { "True", "False" },
+                    CorrectAnswerIndex = 0 // True
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "True or False: Using the same strong password for all your accounts is a good security practice.",
+                    Options = new List<string> { "True", "False" },
+                    CorrectAnswerIndex = 1 // False
+                },
+                new QuizQuestion
+                {
+                    QuestionText = "True or False: Phishing attacks always involve sophisticated malware.",
+                    Options = new List<string> { "True", "False" },
+                    CorrectAnswerIndex = 1 // False
+                },
+                // Multiple Choice Questions (7 total)
                 new QuizQuestion
                 {
                     QuestionText = "What is phishing?",
@@ -829,18 +850,6 @@ namespace samantha_progpart3
                 },
                 new QuizQuestion
                 {
-                    QuestionText = "What is ransomware?",
-                    Options = new List<string> { "A. A type of antivirus software", "B. Malicious software that encrypts your files and demands payment to restore them", "C. A tool for secure file sharing", "D. A method for backing up data" },
-                    CorrectAnswerIndex = 1
-                },
-                new QuizQuestion
-                {
-                    QuestionText = "Which of the following is an example of social engineering?",
-                    Options = new List<string> { "A. Using a complex firewall", "B. Phishing", "C. Implementing strong encryption", "D. Regular software updates" },
-                    CorrectAnswerIndex = 1
-                },
-                new QuizQuestion
-                {
                     QuestionText = "What is the primary purpose of a firewall?",
                     Options = new List<string> { "A. To speed up internet connection", "B. To filter network traffic and prevent unauthorized access", "C. To create strong passwords", "D. To store data securely" },
                     CorrectAnswerIndex = 1
@@ -849,12 +858,6 @@ namespace samantha_progpart3
                 {
                     QuestionText = "Why is it important to keep your software updated?",
                     Options = new List<string> { "A. To get new features", "B. To ensure compatibility with new hardware", "C. To patch security vulnerabilities and improve performance", "D. To increase battery life" },
-                    CorrectAnswerIndex = 2
-                },
-                new QuizQuestion
-                {
-                    QuestionText = "What does 'HTTPS' in a website URL signify?",
-                    Options = new List<string> { "A. HyperText Transfer Protocol Standard", "B. Highly Technical Transfer Protocol Secure", "C. HyperText Transfer Protocol Secure", "D. High-Level Text Transfer Protocol System" },
                     CorrectAnswerIndex = 2
                 }
             };
@@ -875,7 +878,7 @@ namespace samantha_progpart3
             awaitingQuizAnswerInChat = true;
             currentQuestionIndex = 0;
             correctAnswersCount = 0;
-            AddBotMessage("Encryptonite : Great! Let's start the Cybersecurity Quiz in the chat. Type A, B, C, or D for your answer.");
+            AddBotMessage("Encryptonite : Great! Let's start the Cybersecurity Quiz in the chat. Type True/False or A, B, C, or D for your answer."); // Updated prompt
             LogActivity("Chat quiz started."); // Log this specific event
 
             // Also update the visual quiz tab if it exists
@@ -898,61 +901,84 @@ namespace samantha_progpart3
 
             int selectedAnswerIndex = -1;
             string normalizedInput = userInput.Trim().ToLower();
-
-            // Check for direct A, B, C, D or "answer A"
-            if (normalizedInput == "a" || normalizedInput.Contains("answer a"))
-            {
-                selectedAnswerIndex = 0;
-            }
-            else if (normalizedInput == "b" || normalizedInput.Contains("answer b"))
-            {
-                selectedAnswerIndex = 1;
-            }
-            else if (normalizedInput == "c" || normalizedInput.Contains("answer c"))
-            {
-                selectedAnswerIndex = 2;
-            }
-            else if (normalizedInput == "d" || normalizedInput.Contains("answer d"))
-            {
-                selectedAnswerIndex = 3;
-            }
-            else
-            {
-                AddBotMessage("Encryptonite : Please respond with A, B, C, or D for your answer.");
-                LogActivity("Invalid quiz answer format in chat."); // Log this specific event
-                return; // Do not advance question if input is invalid
-            }
-
             QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
 
-            if (selectedAnswerIndex == currentQuestion.CorrectAnswerIndex)
+            // Check if it's a True/False question based on options content
+            if (currentQuestion.Options.Count == 2 &&
+                currentQuestion.Options.Contains("True") && currentQuestion.Options.Contains("False"))
             {
-                correctAnswersCount++;
-                AddBotMessage("Encryptonite : Correct! ✅");
-                LogActivity("Chat quiz answer: Correct."); // Log this specific event
+                if (normalizedInput == "true")
+                {
+                    selectedAnswerIndex = 0; // Assuming "True" is at index 0
+                }
+                else if (normalizedInput == "false")
+                {
+                    selectedAnswerIndex = 1; // Assuming "False" is at index 1
+                }
+            }
+            else // It's a multiple choice question (A, B, C, D)
+            {
+                if (normalizedInput == "a" || normalizedInput.Contains("answer a"))
+                {
+                    selectedAnswerIndex = 0;
+                }
+                else if (normalizedInput == "b" || normalizedInput.Contains("answer b"))
+                {
+                    selectedAnswerIndex = 1;
+                }
+                else if (normalizedInput == "c" || normalizedInput.Contains("answer c"))
+                {
+                    selectedAnswerIndex = 2;
+                }
+                else if (normalizedInput == "d" || normalizedInput.Contains("answer d"))
+                {
+                    selectedAnswerIndex = 3;
+                }
+            }
+
+
+            if (selectedAnswerIndex != -1)
+            {
+                if (selectedAnswerIndex == currentQuestion.CorrectAnswerIndex)
+                {
+                    correctAnswersCount++;
+                    AddBotMessage("Encryptonite : Correct! ✅");
+                    LogActivity("Chat quiz answer: Correct."); // Log this specific event
+                }
+                else
+                {
+                    string correctAnswerText = currentQuestion.Options[currentQuestion.CorrectAnswerIndex];
+                    // Remove "A. " or "True" / "False" prefix for display clarity
+                    if (correctAnswerText.Length > 3 && (correctAnswerText.StartsWith("A.") || correctAnswerText.StartsWith("B.") || correctAnswerText.StartsWith("C.") || correctAnswerText.StartsWith("D.")))
+                    {
+                        correctAnswerText = correctAnswerText.Substring(3);
+                    }
+                    AddBotMessage($"Encryptonite : Incorrect. The correct answer was: {correctAnswerText} ❌");
+                    LogActivity("Chat quiz answer: Incorrect."); // Log this specific event
+                }
+
+                currentQuestionIndex++;
+                Task.Delay(1500).ContinueWith(_ =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (currentQuestionIndex < quizQuestions.Count)
+                        {
+                            DisplayQuizQuestionInChat(); // Display next question in chat
+                            DisplayQuizQuestion(); // Update GUI as well
+                        }
+                        else
+                        {
+                            EndChatQuiz(); // End quiz if all questions answered
+                        }
+                    });
+                });
             }
             else
             {
-                AddBotMessage($"Encryptonite : Incorrect. The correct answer was: {currentQuestion.Options[currentQuestion.CorrectAnswerIndex].Substring(3)} ❌"); // Substring(3) to remove "A. "
-                LogActivity("Chat quiz answer: Incorrect."); // Log this specific event
+                AddBotMessage("Encryptonite : Please respond with True, False, A, B, C, or D for your answer."); // Updated prompt
+                LogActivity("Invalid quiz answer format in chat."); // Log this specific event
             }
-
-            currentQuestionIndex++;
-            Task.Delay(1500).ContinueWith(_ =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    if (currentQuestionIndex < quizQuestions.Count)
-                    {
-                        DisplayQuizQuestionInChat(); // Display next question in chat
-                        DisplayQuizQuestion(); // Update GUI as well
-                    }
-                    else
-                    {
-                        EndChatQuiz(); // End quiz if all questions answered
-                    }
-                });
-            });
         }
 
 
@@ -963,9 +989,13 @@ namespace samantha_progpart3
             {
                 QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
                 string questionOutput = $"Encryptonite : \n\nQuestion {currentQuestionIndex + 1}: {currentQuestion.QuestionText}\n";
-                foreach (string option in currentQuestion.Options)
+                // Only show options if there are more than 0 or it's not explicitly a True/False question to avoid double "True/False" display
+                if (currentQuestion.Options != null && currentQuestion.Options.Any())
                 {
-                    questionOutput += $"{option}\n";
+                    foreach (string option in currentQuestion.Options)
+                    {
+                        questionOutput += $"{option}\n";
+                    }
                 }
                 AddBotMessage(questionOutput);
                 LogActivity($"Displayed quiz question {currentQuestionIndex + 1} in chat."); // Log this specific event
@@ -978,13 +1008,23 @@ namespace samantha_progpart3
         {
             isQuizActiveInChat = false;
             awaitingQuizAnswerInChat = false;
-            AddBotMessage($"Encryptonite : Quiz completed in chat! You scored {correctAnswersCount} out of {quizQuestions.Count}. Well done!");
-            LogActivity($"Chat quiz ended. Final score: {correctAnswersCount}/{quizQuestions.Count}."); // Log this specific event
+            string feedbackMessage = "";
+            if (correctAnswersCount >= 6)
+            {
+                feedbackMessage = "Well done!";
+            }
+            else
+            {
+                feedbackMessage = "Keep learning to stay safe online.";
+            }
+
+            AddBotMessage($"Encryptonite : Quiz completed in chat! You scored {correctAnswersCount} out of {quizQuestions.Count}. {feedbackMessage}");
+            LogActivity($"Chat quiz ended. Final score: {correctAnswersCount}/{quizQuestions.Count}. Feedback: {feedbackMessage}"); // Log this specific event
 
             // Reset GUI quiz state
             QuizQuestionTextBlock.Text = "Quiz Completed!";
             QuizOptionsPanel.Children.Clear();
-            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. Well done!";
+            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. {feedbackMessage}";
             QuizFeedbackTextBlock.Text = "";
             SubmitQuizAnswerButton.IsEnabled = false;
             StartQuizButton.IsEnabled = true;
@@ -1055,7 +1095,12 @@ namespace samantha_progpart3
                 }
                 else
                 {
-                    QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex].Substring(3)} ❌";
+                    string correctAnswerText = quizQuestions[currentQuestionIndex].Options[quizQuestions[currentQuestionIndex].CorrectAnswerIndex];
+                    if (correctAnswerText.Length > 3 && (correctAnswerText.StartsWith("A.") || correctAnswerText.StartsWith("B.") || correctAnswerText.StartsWith("C.") || correctAnswerText.StartsWith("D.")))
+                    {
+                        correctAnswerText = correctAnswerText.Substring(3);
+                    }
+                    QuizFeedbackTextBlock.Text = $"Incorrect. The correct answer was: {correctAnswerText} ❌";
                     QuizFeedbackTextBlock.Foreground = new SolidColorBrush(Colors.Red);
                     LogActivity("GUI Quiz answer: Incorrect."); // Log this specific event
                 }
@@ -1078,15 +1123,25 @@ namespace samantha_progpart3
         private void EndQuiz()
         {
             // This is the original EndQuiz for GUI only.
+            string feedbackMessage = "";
+            if (correctAnswersCount >= 6)
+            {
+                feedbackMessage = "Well done!";
+            }
+            else
+            {
+                feedbackMessage = "Keep learning to stay safe online.";
+            }
+
             QuizQuestionTextBlock.Text = "Quiz Completed!";
             QuizOptionsPanel.Children.Clear();
-            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. Well done!";
+            QuizScoreTextBlock.Text = $"You got {correctAnswersCount} out of {quizQuestions.Count} questions correct. {feedbackMessage}";
             QuizScoreTextBlock.Foreground = new SolidColorBrush(Colors.DarkBlue);
             QuizFeedbackTextBlock.Text = "";
             SubmitQuizAnswerButton.IsEnabled = false;
             StartQuizButton.IsEnabled = true;
-            LogActivity($"Quiz ended. Score: {correctAnswersCount}/{quizQuestions.Count}."); // Log this specific event
-            AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. You're doing great!");
+            LogActivity($"Quiz ended. Score: {correctAnswersCount}/{quizQuestions.Count}. Feedback: {feedbackMessage}"); // Log this specific event
+            AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. {feedbackMessage}");
         }
 
         // --- Activity Log Logic ---
