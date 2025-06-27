@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Media; // For SoundPlayer on Windows
-using System.Linq; // Required for .Where(char.IsDigit) and .Take()
+using System.Media; 
+using System.Linq; 
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
-using System.Collections.ObjectModel; // For ObservableCollection
-using System.Windows.Threading; // Required for Dispatcher.Invoke
-using System.ComponentModel; // Required for INotifyPropertyChanged in TaskItem
+using System.Collections.ObjectModel; 
+using System.Windows.Threading; 
+using System.ComponentModel; 
 
 namespace samantha_progpart3
 {
@@ -21,6 +21,7 @@ namespace samantha_progpart3
         private string lastProactiveInterestMentioned = null;
         private DateTime lastProactiveMentionTime = DateTime.MinValue;
         private Random randomGenerator = new Random();
+        private Greeting greeter; // Instance of the Greeting class
 
         // Task Assistant
         private ObservableCollection<TaskItem> tasks = new ObservableCollection<TaskItem>();
@@ -43,13 +44,15 @@ namespace samantha_progpart3
         public MainWindow()
         {
             InitializeComponent();
-            InitializeChatbot();
+            // Initialize the Greeting instance here, passing necessary actions
+            greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
+            InitializeChatbot(); // This method now calls greeter.DisplayAsciiArt()
             LoadQuizQuestions(); // Load quiz questions at startup
             TasksListBox.ItemsSource = tasks; // Bind ListBox to ObservableCollection
             ActivityLogListBox.ItemsSource = activityLog; // Bind Activity Log ListBox (now displaying all entries)
             RefreshTasksDisplay(); // Display any pre-loaded tasks (if implementing persistence)
             LogActivity("Chatbot initialized.");
-            SimulateGreeting();
+            SimulateGreeting(); // This method now handles initial bot message and user name request
             UserInputTextBox.Focus();
 
             // Add placeholder text logic for Task text boxes
@@ -119,8 +122,9 @@ namespace samantha_progpart3
                     userName = input;
                     AddUserMessage(input);
                     AddBotMessage($"Nice to meet you, {userName}! How can I help you stay safe online today? 🛡️");
-                    AddBotMessage("You can ask me about 'phishing?', 'passwords', 'safe Browse', 'scams', 'malware', 'network security', or 'cybersecurity tips'.");
-                    AddBotMessage("You can also type 'start quiz' to test your knowledge, 'add task' to manage tasks, or 'show activity log' to see what I've been doing.");
+
+                    // Display the help menu immediately after the greeting
+                    greeter.DisplayHelpMenu();
 
                     // Restore normal input processing
                     UserInputTextBox.KeyDown -= GetUserName_KeyDown; // Remove name handler
@@ -133,13 +137,9 @@ namespace samantha_progpart3
                 }
             }
         }
-
-        // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
-            // Create an instance of the Greeting class and call its DisplayAsciiArt method
-            // Pass the AddAsciiArtMessage, AddBotMessage, and LogActivity methods as actions
-            Greeting greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
+            // Call the Greeting instance to display ASCII art
             greeter.DisplayAsciiArt();
 
             PlayVoiceGreeting(); // Enabled voice greeting
@@ -234,8 +234,8 @@ namespace samantha_progpart3
         {
             try
             {
-               
-                string filePath = "Progsound.wav"; 
+                
+                string filePath = "Progsound.wav"; // Corrected to match "Progsound.wav" (capital P)
                 if (File.Exists(filePath))
                 {
                     System.Media.SoundPlayer player = new System.Media.SoundPlayer(filePath);
