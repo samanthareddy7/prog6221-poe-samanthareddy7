@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Text; // Required for StringBuilder
-using System.Threading.Tasks; // Required for Task.Delay
-using System.Windows.Media; // Required for SolidColorBrush in some potential future scenarios, though not directly used for text color here.
+using System.Text; 
+using System.Threading.Tasks; 
+using System.Windows.Media; 
 
 namespace samantha_progpart3
 {
@@ -12,9 +12,7 @@ namespace samantha_progpart3
         private Action<string> _addBotMessage; // Added to store the AddBotMessage action
         private Action<string> _logActivity;   // Added to store the LogActivity action
 
-        /// <summary>
-        /// Constructor for the Greeting class.
-        /// </summary>
+       
         /// <param name="addAsciiArtMessage">Action to add an ASCII art message to the chat display.</param>
         /// <param name="addBotMessage">Action to add a regular bot message to the chat display.</param>
         /// <param name="logActivity">Action to log an activity.</param>
@@ -25,9 +23,7 @@ namespace samantha_progpart3
             _logActivity = logActivity;
         }
 
-        /// <summary>
-        /// Displays the Encryptonite ASCII art banner in the chat.
-        /// </summary>
+        
         public async void DisplayAsciiArt()
         {
             // Original ASCII Art for Encryptonite as provided by the user
@@ -52,9 +48,7 @@ namespace samantha_progpart3
             await Task.Delay(1000); // Small delay after displaying ASCII art
         }
 
-        /// <summary>
-        /// Displays a formatted help menu with cybersecurity topics as ASCII art in the chat.
-        /// </summary>
+       
         public void DisplayHelpMenu()
         {
             StringBuilder menu = new StringBuilder();
@@ -77,9 +71,9 @@ menu.AppendLine("│  • Malware            → Understand and block malware   
 menu.AppendLine("│  • Network Security   → Keep your connection strong                    │");
 menu.AppendLine("│  • Cybersecurity      → Get the big picture on staying safe            │");
 menu.AppendLine("│  • Help               → A reminder of what you can ask                 │");
-menu.AppendLine("│  • Task               → Add a task with reminders and check when done  │");
-menu.AppendLine("│  • Quiz               → Play a quiz to test your cybersecurity skills  │");
-menu.AppendLine("│  • Activity           → View recent chat and side activity history     │");
+menu.AppendLine("│  • Add Task           → Add a task with reminders and check when done  │");
+menu.AppendLine("│  • Start quiz         → Play a quiz to test your cybersecurity skills  │");
+menu.AppendLine("│  • Show Activity log  → View recent chat and side activity history     │");
 menu.AppendLine("│                                                                        │");
 menu.AppendLine("└────•───────────────────────────────────────────────────────────────•────┘");
 menu.AppendLine("");

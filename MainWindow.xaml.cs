@@ -22,6 +22,7 @@ namespace samantha_progpart3
         private DateTime lastProactiveMentionTime = DateTime.MinValue;
         private Random randomGenerator = new Random();
         private Greeting greeter; // Instance of the Greeting class
+        private bool _awaitingUserNameInput = false; // New flag to track if we're waiting for username
 
         // Task Assistant
         private ObservableCollection<TaskItem> tasks = new ObservableCollection<TaskItem>();
@@ -104,39 +105,51 @@ namespace samantha_progpart3
         private void RequestUserName()
         {
             AddBotMessage("Before we start, what's your name?");
+            _awaitingUserNameInput = true; // Set the flag
             // Temporarily change KeyDown handler to capture user's name
             UserInputTextBox.KeyDown -= UserInputTextBox_KeyDown; // Remove default handler
             UserInputTextBox.KeyDown += GetUserName_KeyDown;      // Add specific handler for name input
         }
 
-        // Captures user's name from input after greeting
+        // Captures user's name from input after greeting (triggered by Enter key)
         private async void GetUserName_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                string input = UserInputTextBox.Text.Trim();
-                UserInputTextBox.Clear();
-
-                if (!string.IsNullOrWhiteSpace(input))
-                {
-                    userName = input;
-                    AddUserMessage(input);
-                    AddBotMessage($"Nice to meet you, {userName}! How can I help you stay safe online today? 🛡️");
-
-                    // Display the help menu immediately after the greeting
-                    greeter.DisplayHelpMenu();
-
-                    // Restore normal input processing
-                    UserInputTextBox.KeyDown -= GetUserName_KeyDown; // Remove name handler
-                    UserInputTextBox.KeyDown += UserInputTextBox_KeyDown; // Add back default handler
-                    LogActivity($"User name set to '{userName}'.");
-                }
-                else
-                {
-                    AddBotMessage("Please tell me your name.");
-                }
+                // Call the common handler for username processing
+                ProcessUserNameInput();
             }
         }
+
+        // New common method to process username input
+        private void ProcessUserNameInput()
+        {
+            string input = UserInputTextBox.Text.Trim();
+            UserInputTextBox.Clear();
+
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                userName = input;
+                AddUserMessage(input); // This will now correctly show "UserName: input"
+                AddBotMessage($"Nice to meet you, {userName}! How can I help you stay safe online today? 🛡️");
+
+                // Display the help menu immediately after the greeting
+                greeter.DisplayHelpMenu();
+
+                // Restore normal input processing
+                _awaitingUserNameInput = false; // Reset the flag
+                UserInputTextBox.KeyDown -= GetUserName_KeyDown; // Remove name handler
+                UserInputTextBox.KeyDown += UserInputTextBox_KeyDown; // Add back default handler
+                LogActivity($"User name set to '{userName}'.");
+            }
+            else
+            {
+                AddBotMessage("Please tell me your name.");
+                LogActivity("Empty user name input during greeting.");
+            }
+        }
+
+        // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
             // Call the Greeting instance to display ASCII art
@@ -159,7 +172,7 @@ namespace samantha_progpart3
                 { "scam", new List<string> {
                     "Always verify a site or sender before clicking anything. Don't give scammers a chance!",
                     "Scams are like digital traps don't fall for them! 🕳️🐭",
-                    "Always verify links and senders before clicking anything. 🔍📧",
+                    "Always verify links and senders before clicking anything. �📧",
                     "Scammers want your personal info don't let them have it! 🔒🚫"
                 }},
                 { "what can", new List<string> {
@@ -234,8 +247,8 @@ namespace samantha_progpart3
         {
             try
             {
-                
-                string filePath = "Progsound.wav"; // Corrected to match "Progsound.wav" (capital P)
+               
+                string filePath = "Progsound.wav"; 
                 if (File.Exists(filePath))
                 {
                     System.Media.SoundPlayer player = new System.Media.SoundPlayer(filePath);
@@ -266,18 +279,26 @@ namespace samantha_progpart3
         // Handles the Send button click for general chat
         private void SendMessage_Click(object sender, RoutedEventArgs e)
         {
-            string input = UserInputTextBox.Text.Trim();
-            UserInputTextBox.Clear();
-
-            if (string.IsNullOrWhiteSpace(input))
+            // If awaiting username input, process it through the dedicated method
+            if (_awaitingUserNameInput)
             {
-                AddBotMessage("Encryptonite : I did not quite understand that, can you please rephrase?");
-                LogActivity("Empty user input."); // Log this specific event
-                return;
+                ProcessUserNameInput();
             }
+            else // Otherwise, proceed with normal message processing
+            {
+                string input = UserInputTextBox.Text.Trim();
+                UserInputTextBox.Clear();
 
-            AddUserMessage(input);
-            ProcessUserInput(input);
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    AddBotMessage("Encryptonite : I did not quite understand that, can you please rephrase?");
+                    LogActivity("Empty user input."); // Log this specific event
+                    return;
+                }
+
+                AddUserMessage(input);
+                ProcessUserInput(input);
+            }
         }
 
         // Adds a message from the bot to the chat display
@@ -489,6 +510,18 @@ namespace samantha_progpart3
                     userMemory[key] = value;
                     AddBotMessage($"Encryptonite : Got it! I'll remember your {key} is {value} 🧠💾.");
                     LogActivity($"Memorized '{key}': '{value}'."); // Log this specific event
+
+                    // NEW ENHANCEMENT: Check if the 'value' itself is a cybersecurity keyword
+                    if (_cybersecurityResponses.ContainsKey(value.ToLower()))
+                    {
+                        List<string> responses = _cybersecurityResponses[value.ToLower()];
+                        if (responses != null && responses.Count > 0)
+                        {
+                            string relatedResponse = responses[randomGenerator.Next(responses.Count)];
+                            AddBotMessage($"Encryptonite : And speaking of '{value}', did you know? {relatedResponse}");
+                            LogActivity($"Provided related info for '{value}' after memory recall."); // Log this specific event
+                        }
+                    }
                     return;
                 }
             }
