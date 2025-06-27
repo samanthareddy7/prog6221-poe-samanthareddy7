@@ -33,9 +33,11 @@ namespace samantha_progpart3
         private bool isQuizActiveInChat = false; // State for chat-based quiz
         private bool awaitingQuizAnswerInChat = false; // State for chat-based quiz answer input
 
-        
+        // Activity Log - Removed MaxLogEntries constant, the collection will now store all.
         private ObservableCollection<ActivityLogEntry> activityLog = new ObservableCollection<ActivityLogEntry>();
+        // private const int MaxLogEntries = 10; // This constant is no longer used to limit the collection itself.
 
+        // Dictionary for cybersecurity responses - NOW LIST OF STRINGS FOR RANDOM RESPONSES
         private Dictionary<string, List<string>> _cybersecurityResponses;
 
         public MainWindow()
@@ -135,12 +137,14 @@ namespace samantha_progpart3
         // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
-           
+            // Create an instance of the Greeting class and call its DisplayAsciiArt method
+            // Pass the AddAsciiArtMessage, AddBotMessage, and LogActivity methods as actions
             Greeting greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
             greeter.DisplayAsciiArt();
 
             PlayVoiceGreeting(); // Enabled voice greeting
 
+            // Initialize cybersecurity responses dictionary directly here with Lists of strings
             _cybersecurityResponses = new Dictionary<string, List<string>>
             {
                 { "how are you", new List<string> {
@@ -230,9 +234,8 @@ namespace samantha_progpart3
         {
             try
             {
-                // Ensure Progsound.wav is in your project's root directory and
-                // its 'Copy to Output Directory' property is set to 'Copy if newer'.
-                string filePath = "Progsound.wav"; // Corrected to match "Progsound.wav" (capital P)
+               
+                string filePath = "Progsound.wav"; 
                 if (File.Exists(filePath))
                 {
                     System.Media.SoundPlayer player = new System.Media.SoundPlayer(filePath);
@@ -775,7 +778,7 @@ namespace samantha_progpart3
                     AddBotMessage($"Encryptonite : Task '{task.Title}' marked as incomplete.");
                     LogActivity($"Task '{task.Title}' marked as incomplete."); // Log this specific event
                 }
-                RefreshTasksDisplay(); // Ensure UI updates
+                // Removed the call to RefreshTasksDisplay()
             }
         }
 
