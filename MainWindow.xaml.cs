@@ -11,18 +11,28 @@ using System.Threading.Tasks;
 using System.Collections.ObjectModel; 
 using System.Windows.Threading; 
 using System.ComponentModel; 
+using System.Runtime.CompilerServices;
+
 
 namespace samantha_progpart3
 {
     public partial class MainWindow : Window
     {
         private string userName = "User"; // Default user name
-        private Dictionary<string, string> userMemory = new Dictionary<string, string>(); // Enabled user memory
+        private Dictionary<string, string> userMemory = new Dictionary<string, string>(); 
         private string lastProactiveInterestMentioned = null;
         private DateTime lastProactiveMentionTime = DateTime.MinValue;
         private Random randomGenerator = new Random();
-        private Greeting greeter; // Instance of the Greeting class
-        private bool _awaitingUserNameInput = false; // New flag to track if we're waiting for username
+        private Greeting greeter;
+        private bool _awaitingUserNameInput = false; 
+
+        // Task Assistant State Management
+        private bool _awaitingReminderConfirmation = false; // If bot asked "Would you like a reminder?"
+        private bool _awaitingReminderDate = false;        // If bot asked "On what date?"
+        private TaskItem _lastCreatedTask = null;          // To link reminder date to the task
+        private bool _awaitingTaskForReminderDate = false; // If user said "remind me on [date]" first
+        private DateTime? _tempReminderDate = null;        // Stores date for _awaitingTaskForReminderDate state
+
 
         // Task Assistant
         private ObservableCollection<TaskItem> tasks = new ObservableCollection<TaskItem>();
@@ -32,28 +42,26 @@ namespace samantha_progpart3
         private int currentQuestionIndex = 0;
         private int correctAnswersCount = 0;
         private List<RadioButton> currentQuizOptionRadios;
-        private bool isQuizActiveInChat = false; // State for chat-based quiz
-        private bool awaitingQuizAnswerInChat = false; // State for chat-based quiz answer input
+        private bool isQuizActiveInChat = false;
+        private bool awaitingQuizAnswerInChat = false; 
 
         // Activity Log - Removed MaxLogEntries constant, the collection will now store all.
         private ObservableCollection<ActivityLogEntry> activityLog = new ObservableCollection<ActivityLogEntry>();
-        // private const int MaxLogEntries = 10; // This constant is no longer used to limit the collection itself.
 
-        // Dictionary for cybersecurity responses - NOW LIST OF STRINGS FOR RANDOM RESPONSES
+        // Dictionary for cybersecurity responses - RANDOM RESPONSES
         private Dictionary<string, List<string>> _cybersecurityResponses;
 
         public MainWindow()
         {
             InitializeComponent();
-            // Initialize the Greeting instance here, passing necessary actions
             greeter = new Greeting(AddAsciiArtMessage, AddBotMessage, LogActivity);
             InitializeChatbot(); // This method now calls greeter.DisplayAsciiArt()
             LoadQuizQuestions(); // Load quiz questions at startup
-            TasksListBox.ItemsSource = tasks; // Bind ListBox to ObservableCollection
-            ActivityLogListBox.ItemsSource = activityLog; // Bind Activity Log ListBox (now displaying all entries)
-            RefreshTasksDisplay(); // Display any pre-loaded tasks (if implementing persistence)
+            TasksListBox.ItemsSource = tasks; 
+            ActivityLogListBox.ItemsSource = activityLog; 
+            RefreshTasksDisplay();
             LogActivity("Chatbot initialized.");
-            SimulateGreeting(); // This method now handles initial bot message and user name request
+            SimulateGreeting(); 
             UserInputTextBox.Focus();
 
             // Add placeholder text logic for Task text boxes
@@ -70,7 +78,7 @@ namespace samantha_progpart3
             if (textBox != null && (textBox.Text == "Task Title (e.g., Enable 2FA)" || textBox.Text == "Description (optional)"))
             {
                 textBox.Text = "";
-                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)); // #333333
+                textBox.Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)); 
             }
         }
 
@@ -95,7 +103,7 @@ namespace samantha_progpart3
         // Simulates an initial greeting message and user name request
         private async void SimulateGreeting()
         {
-            await Task.Delay(500); // Simulate a short delay before greeting
+            await Task.Delay(500); 
             AddBotMessage("Hello! I am Encryptonite 🤖🔊, your Cybersecurity Awareness Chatbot.");
             await Task.Delay(1000);
             RequestUserName();
@@ -105,13 +113,12 @@ namespace samantha_progpart3
         private void RequestUserName()
         {
             AddBotMessage("Before we start, what's your name?");
-            _awaitingUserNameInput = true; // Set the flag
-            // Temporarily change KeyDown handler to capture user's name
-            UserInputTextBox.KeyDown -= UserInputTextBox_KeyDown; // Remove default handler
-            UserInputTextBox.KeyDown += GetUserName_KeyDown;      // Add specific handler for name input
+            _awaitingUserNameInput = true; 
+            UserInputTextBox.KeyDown -= UserInputTextBox_KeyDown; 
+            UserInputTextBox.KeyDown += GetUserName_KeyDown;      
         }
 
-        // Captures user's name from input after greeting (triggered by Enter key)
+        // Captures user's name from input after greeting 
         private async void GetUserName_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -125,7 +132,6 @@ namespace samantha_progpart3
         private void ProcessUserNameInput()
         {
             string input = UserInputTextBox.Text.Trim();
-            UserInputTextBox.Clear();
 
             if (!string.IsNullOrWhiteSpace(input))
             {
@@ -137,19 +143,19 @@ namespace samantha_progpart3
                 greeter.DisplayHelpMenu();
 
                 // Restore normal input processing
-                _awaitingUserNameInput = false; // Reset the flag
-                UserInputTextBox.KeyDown -= GetUserName_KeyDown; // Remove name handler
-                UserInputTextBox.KeyDown += UserInputTextBox_KeyDown; // Add back default handler
+                _awaitingUserNameInput = false; 
+                UserInputTextBox.KeyDown -= GetUserName_KeyDown;
+                UserInputTextBox.KeyDown += UserInputTextBox_KeyDown; 
                 LogActivity($"User name set to '{userName}'.");
+                UserInputTextBox.Clear(); // Clear the text box AFTER name is processed and added to chat
             }
             else
             {
-                AddBotMessage("Please tell me your name.");
+                AddBotMessage("Please tell me my name."); 
                 LogActivity("Empty user name input during greeting.");
             }
         }
 
-        // Initializes the chatbot, including displaying ASCII art and playing greeting sound
         private void InitializeChatbot()
         {
             // Call the Greeting instance to display ASCII art
@@ -172,7 +178,7 @@ namespace samantha_progpart3
                 { "scam", new List<string> {
                     "Always verify a site or sender before clicking anything. Don't give scammers a chance!",
                     "Scams are like digital traps don't fall for them! 🕳️🐭",
-                    "Always verify links and senders before clicking anything. �📧",
+                    "Always verify links and senders before clicking anything. 🔍📧",
                     "Scammers want your personal info don't let them have it! 🔒🚫"
                 }},
                 { "what can", new List<string> {
@@ -197,7 +203,7 @@ namespace samantha_progpart3
                     "Avoid using '123456' or birthdays or simple names even a toddler can crack that one."
                 }},
                 { "safe browse", new List<string> {
-                    "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
+                    "Use HTTPS sites, avoid popups, and never download shady files �🚫🕷️."
                 }},
                 { "safe browsing", new List<string> {
                     "Use HTTPS sites, avoid popups, and never download shady files 🌐🚫🕷️."
@@ -242,12 +248,11 @@ namespace samantha_progpart3
             LogActivity("Chatbot initialized with cybersecurity responses.");
         }
 
-        // Plays a voice greeting sound (Windows-specific)
+        // Plays a voice greeting sound
         private void PlayVoiceGreeting()
         {
             try
             {
-               
                 string filePath = "Progsound.wav"; 
                 if (File.Exists(filePath))
                 {
@@ -279,34 +284,50 @@ namespace samantha_progpart3
         // Handles the Send button click for general chat
         private void SendMessage_Click(object sender, RoutedEventArgs e)
         {
-            // If awaiting username input, process it through the dedicated method
+            string input = UserInputTextBox.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                AddBotMessage("Encryptonite : I did not quite understand that, can you please rephrase?");
+                LogActivity("Empty user input."); 
+                return;
+            }
+
+            AddUserMessage(input); 
             if (_awaitingUserNameInput)
             {
                 ProcessUserNameInput();
             }
-            else // Otherwise, proceed with normal message processing
+            else if (_awaitingReminderConfirmation)
             {
-                string input = UserInputTextBox.Text.Trim();
-                UserInputTextBox.Clear();
-
-                if (string.IsNullOrWhiteSpace(input))
-                {
-                    AddBotMessage("Encryptonite : I did not quite understand that, can you please rephrase?");
-                    LogActivity("Empty user input."); // Log this specific event
-                    return;
-                }
-
-                AddUserMessage(input);
+                HandleReminderConfirmation(input);
+            }
+            else if (_awaitingReminderDate)
+            {
+                HandleReminderDateInput(input);
+            }
+            else if (_awaitingTaskForReminderDate)
+            {
+                HandleTaskDescriptionForReminder(input);
+            }
+            else if (isQuizActiveInChat && awaitingQuizAnswerInChat)
+            {
+                ProcessChatQuizAnswer(input.ToLower()); 
+            }
+            else 
+            {
                 ProcessUserInput(input);
             }
+            // Clear input box after it has been fully processed by the appropriate handler
+            
+            UserInputTextBox.Clear();
         }
 
-        // Adds a message from the bot to the chat display
         private void AddBotMessage(string message)
         {
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(224, 224, 224)), // #E0E0E0
+                Background = new SolidColorBrush(Color.FromRgb(224, 224, 224)), 
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(8),
                 Margin = new Thickness(5, 2, 5, 2),
@@ -324,21 +345,18 @@ namespace samantha_progpart3
 
             border.Child = textBlock;
             ChatDisplayPanel.Children.Add(border);
-            // Scroll to the bottom
             var scrollViewer = VisualTreeHelper.GetParent(ChatDisplayPanel) as ScrollViewer;
             if (scrollViewer != null)
             {
                 scrollViewer.ScrollToEnd();
             }
-            // Removed direct LogActivity call from here to prevent recursive logging
         }
 
-        // Adds a message from the user to the chat display
         private void AddUserMessage(string message)
         {
             var border = new Border
             {
-                Background = new SolidColorBrush(Color.FromRgb(220, 248, 198)), // #DCF8C6
+                Background = new SolidColorBrush(Color.FromRgb(220, 248, 198)), 
                 CornerRadius = new CornerRadius(10),
                 Padding = new Thickness(8),
                 Margin = new Thickness(5, 2, 5, 2),
@@ -351,12 +369,11 @@ namespace samantha_progpart3
                 Text = $"{userName}: {message}",
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 14,
-                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51)) // #333333
+                Foreground = new SolidColorBrush(Color.FromRgb(51, 51, 51))
             };
 
             border.Child = textBlock;
             ChatDisplayPanel.Children.Add(border);
-            // Scroll to the bottom
             var scrollViewer = VisualTreeHelper.GetParent(ChatDisplayPanel) as ScrollViewer;
             if (scrollViewer != null)
             {
@@ -364,27 +381,26 @@ namespace samantha_progpart3
             }
         }
 
-        // Adds a message specifically for ASCII art, using a monospace font and no wrapping
+        // Adds a message specifically for ASCII art
         private void AddAsciiArtMessage(string message)
         {
             var textBlock = new TextBlock
             {
                 Text = message,
-                FontFamily = new FontFamily("Consolas"), // Monospace font for ASCII art
-                TextWrapping = TextWrapping.NoWrap,     // Crucial for preserving ASCII art layout
-                HorizontalAlignment = HorizontalAlignment.Center, // Center the ASCII art
-                FontSize = 12, // Slightly smaller font can sometimes fit better
+                FontFamily = new FontFamily("Consolas"),
+                TextWrapping = TextWrapping.NoWrap,     
+                HorizontalAlignment = HorizontalAlignment.Center, 
+                FontSize = 12, 
                 Foreground = new SolidColorBrush(Color.FromRgb(255, 0, 255)), // Magenta color
                 Margin = new Thickness(5, 5, 5, 5) // Add some margin around the art
             };
             ChatDisplayPanel.Children.Add(textBlock);
-            // Scroll to the bottom
             var scrollViewer = VisualTreeHelper.GetParent(ChatDisplayPanel) as ScrollViewer;
             if (scrollViewer != null)
             {
                 scrollViewer.ScrollToEnd();
             }
-            LogActivity($"Displayed ASCII art."); // This specific log is fine, it logs the action of displaying ASCII art itself.
+            LogActivity($"Displayed ASCII art."); //  logs the action of displaying ASCII art itself.
         }
 
 
@@ -393,7 +409,6 @@ namespace samantha_progpart3
         {
             string lowerInput = input.ToLower();
 
-            // --- IMPORTANT: Check for quiz exit command FIRST ---
             if (isQuizActiveInChat && (lowerInput.Contains("end quiz") || lowerInput.Contains("stop quiz")))
             {
                 EndChatQuiz();
@@ -419,12 +434,10 @@ namespace samantha_progpart3
                 }
                 AddBotMessage("Encryptonite : Stay safe online, thank you for being here. Goodbye!");
                 LogActivity("Chatbot session ended.");
-                // Application.Current.Shutdown(); // Optionally close the application
                 return;
             }
 
             // --- NLP Simulation / Keyword Detection ---
-            // Task Management Commands
             if (lowerInput.Contains("add task") || lowerInput.Contains("create task") || lowerInput.Contains("new task"))
             {
                 HandleAddTaskCommand(input);
@@ -439,7 +452,14 @@ namespace samantha_progpart3
                 LogActivity("User requested to view tasks."); // Log this specific event
                 return;
             }
-            if (lowerInput.Contains("remind me to") || lowerInput.Contains("set a reminder"))
+
+            // Modified to prioritize "remind me on [date]" separately if no explicit task is given
+            if (lowerInput.Contains("remind me on") && !lowerInput.Contains("remind me to"))
+            {
+                HandleStandaloneReminderCommand(input);
+                return;
+            }
+            else if (lowerInput.Contains("remind me to")) // Handles "remind me to [task] on [date]"
             {
                 HandleSetReminderCommand(input);
                 return;
@@ -456,8 +476,8 @@ namespace samantha_progpart3
             // Activity Log Commands
             if (lowerInput.Contains("show activity log") || lowerInput.Contains("what have you done") || lowerInput.Contains("view log"))
             {
-                RefreshActivityLogDisplay(); // Always update the log tab first
-                AddBotMessage("Here's a summary of recent actions:"); // Initial message before detailed log in chat
+                RefreshActivityLogDisplay(); 
+                AddBotMessage("Here's a summary of recent actions:"); 
                 DisplayRecentActivityInChat(); // Now display in chat as well (limited to 5 for conciseness)
                 TabControl mainTabControl = (TabControl)FindName("mainTabControl");
                 if (mainTabControl != null) mainTabControl.SelectedItem = FindName("ActivityLogTabItem");
@@ -467,7 +487,7 @@ namespace samantha_progpart3
             // Keeping "show recent activity" as a separate command if the user just wants the chat output
             if (lowerInput.Contains("show recent activity") || lowerInput.Contains("recent log"))
             {
-                DisplayRecentActivityInChat(); // This only displays in chat, no tab switch
+                DisplayRecentActivityInChat(); 
                 LogActivity("User requested to view recent activity in chat."); // Log this specific event
                 return;
             }
@@ -511,7 +531,7 @@ namespace samantha_progpart3
                     AddBotMessage($"Encryptonite : Got it! I'll remember your {key} is {value} 🧠💾.");
                     LogActivity($"Memorized '{key}': '{value}'."); // Log this specific event
 
-                    // NEW ENHANCEMENT: Check if the 'value' itself is a cybersecurity keyword
+                    //  Check if the 'value' itself is a cybersecurity keyword
                     if (_cybersecurityResponses.ContainsKey(value.ToLower()))
                     {
                         List<string> responses = _cybersecurityResponses[value.ToLower()];
@@ -572,8 +592,169 @@ namespace samantha_progpart3
             LogActivity($"General bot response: '{botResponse}'"); // Log this specific event
         }
 
-
         // --- Task Assistant Logic ---
+        /// <param name="input">The user's response (e.g., "yes", "no").</param>
+        private void HandleReminderConfirmation(string input)
+        {
+            string lowerInput = input.ToLower();
+            _awaitingReminderConfirmation = false; // Reset the flag immediately
+
+            if (lowerInput.Contains("yes"))
+            {
+                _awaitingReminderDate = true; // Set flag to expect a date next
+                AddBotMessage("Encryptonite : On what date should I remind you? (e.g., '2025-07-20', 'tomorrow', or 'in 3 days')");
+                LogActivity("User confirmed reminder, awaiting date.");
+            }
+            else if (lowerInput.Contains("no"))
+            {
+                _lastCreatedTask = null; // Clear the reference to the task
+                AddBotMessage("Encryptonite : Okay, no reminder for this task.");
+                LogActivity("User declined reminder.");
+            }
+            else
+            {
+                AddBotMessage("Encryptonite : I didn't understand that. Please say 'yes' or 'no' if you want a reminder, or ignore if you wish to continue.");
+                _awaitingReminderConfirmation = true; // Keep the flag true if input wasn't clear
+                LogActivity("Invalid reminder confirmation input.");
+            }
+        }
+
+        /// <param name="input">The user's date string.</param>
+        private void HandleReminderDateInput(string input)
+        {
+            _awaitingReminderDate = false; // Reset the flag immediately
+            if (_lastCreatedTask == null)
+            {
+                AddBotMessage("Encryptonite : Hmm, I lost track of which task this reminder is for. Please try adding the task and reminder again.");
+                LogActivity("Reminder date input received, but no last created task found.");
+                return;
+            }
+
+            DateTime? parsedDate = ParseDateInput(input);
+
+            if (parsedDate.HasValue)
+            {
+                _lastCreatedTask.ReminderDate = parsedDate;
+                RefreshTasksDisplay();
+                AddBotMessage($"Encryptonite : Reminder set for '{_lastCreatedTask.Title}' on {parsedDate.Value.ToShortDateString()}.");
+                LogActivity($"Reminder set for task '{_lastCreatedTask.Title}' on {parsedDate.Value.ToShortDateString()}.");
+                _lastCreatedTask = null; // Clear the reference
+            }
+            else
+            {
+                AddBotMessage("Encryptonite : I couldn't understand that date. Please try again using a clear format (e.g., '2025-07-20', 'tomorrow', or 'in 3 days').");
+                _awaitingReminderDate = true; // Keep the flag true to re-prompt for date
+                LogActivity("Invalid reminder date input.");
+            }
+        }
+
+        /// <param name="input">The full user input string.</param>
+        private void HandleStandaloneReminderCommand(string input)
+        {
+            string lowerInput = input.ToLower();
+            // Extract date part after "remind me on"
+            int dateStartIndex = lowerInput.IndexOf("remind me on") + "remind me on".Length;
+            string datePart = input.Substring(dateStartIndex).Trim();
+
+            DateTime? parsedDate = ParseDateInput(datePart);
+
+            if (parsedDate.HasValue)
+            {
+                _tempReminderDate = parsedDate;
+                _awaitingTaskForReminderDate = true; // Set flag to expect task description next
+                AddBotMessage($"Encryptonite : I can set a reminder for {parsedDate.Value.ToShortDateString()}. What task should I remind you about?");
+                LogActivity($"Standalone reminder initiated for {parsedDate.Value.ToShortDateString()}, awaiting task description.");
+            }
+            else
+            {
+                AddBotMessage("Encryptonite : I couldn't understand the date for the reminder. Please try again using a clear format (e.g., 'remind me on 2025-07-20').");
+                LogActivity("Invalid date input for standalone reminder.");
+            }
+        }
+
+        /// <param name="input">The user's task description.</param>
+        private void HandleTaskDescriptionForReminder(string input)
+        {
+            _awaitingTaskForReminderDate = false; // Reset the flag immediately
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                AddBotMessage("Encryptonite : You need to tell me what task to remind you about.");
+                _awaitingTaskForReminderDate = true; // Re-prompt if input is empty
+                LogActivity("Empty task description for standalone reminder.");
+                return;
+            }
+
+            string taskTitle = input.Trim();
+            string description = GetDefaultTaskDescription(taskTitle); // Get a default description or use taskTitle
+            DateTime? reminderDate = _tempReminderDate; // Use the stored date
+
+            if (reminderDate.HasValue)
+            {
+                AddTask(taskTitle, description, reminderDate); // Create the task with the reminder
+                AddBotMessage($"Encryptonite : Task '{taskTitle}' added with a reminder for {reminderDate.Value.ToShortDateString()}.");
+                LogActivity($"Task '{taskTitle}' added with reminder via standalone flow.");
+            }
+            else
+            {
+                AddBotMessage("Encryptonite : Something went wrong. I have the task, but lost the reminder date. Please try again.");
+                LogActivity("Error: Task description received for standalone reminder, but reminder date was null.");
+            }
+
+            _tempReminderDate = null; // Clear temporary date
+        }
+
+        /// <param name="dateInput">The string to parse.</param>
+        /// <returns>A nullable DateTime if parsing is successful.</returns>
+        private DateTime? ParseDateInput(string dateInput)
+        {
+            dateInput = dateInput.ToLower();
+            DateTime parsedDate;
+
+            // Try to parse absolute date formats first
+            if (DateTime.TryParse(dateInput, out parsedDate))
+            {
+                return parsedDate;
+            }
+
+            // Handle relative dates
+            if (dateInput.Contains("tomorrow"))
+            {
+                return DateTime.Today.AddDays(1);
+            }
+            else if (dateInput.Contains("day")) // "in X days"
+            {
+                int days;
+                // Extract digits from the string (e.g., "in 3 days" -> "3")
+                string daysPart = new string(dateInput.Where(char.IsDigit).ToArray());
+                if (int.TryParse(daysPart, out days))
+                {
+                    return DateTime.Today.AddDays(days);
+                }
+            }
+            else if (dateInput.Contains("week")) // "in X weeks"
+            {
+                int weeks;
+                string weeksPart = new string(dateInput.Where(char.IsDigit).ToArray());
+                if (int.TryParse(weeksPart, out weeks))
+                {
+                    return DateTime.Today.AddDays(weeks * 7);
+                }
+            }
+            else if (dateInput.Contains("month")) // "in X months"
+            {
+                int months;
+                string monthsPart = new string(dateInput.Where(char.IsDigit).ToArray());
+                if (int.TryParse(monthsPart, out months))
+                {
+                    return DateTime.Today.AddMonths(months);
+                }
+            }
+
+
+            return null; // Return null if date cannot be parsed
+        }
+
         private void HandleAddTaskCommand(string input)
         {
             string taskTitle = "";
@@ -591,6 +772,7 @@ namespace samantha_progpart3
                 int descIndex = remainingInput.IndexOf("description");
                 int reminderIndex = remainingInput.IndexOf("reminder");
 
+                // Determine taskTitle and taskDescription
                 if (descIndex != -1)
                 {
                     taskTitle = remainingInput.Substring(0, descIndex).TrimEnd('-', ' ');
@@ -606,31 +788,17 @@ namespace samantha_progpart3
                     taskTitle = remainingInput;
                 }
 
-                // Try to parse reminder date (local implementation)
+                // Try to parse reminder date (using new ParseDateInput method)
                 if (reminderIndex != -1)
                 {
                     string datePart = remainingInput.Substring(reminderIndex + "reminder".Length).Trim();
-                    if (DateTime.TryParse(datePart, out DateTime parsedDate))
-                    {
-                        reminderDate = parsedDate;
-                    }
-                    else if (datePart.Contains("day")) // "in 3 days"
-                    {
-                        int days;
-                        if (int.TryParse(string.Join("", datePart.Where(char.IsDigit)), out days))
-                        {
-                            reminderDate = DateTime.Now.AddDays(days);
-                        }
-                    }
-                    else if (datePart.Contains("tomorrow"))
-                    {
-                        reminderDate = DateTime.Now.AddDays(1);
-                    }
+                    reminderDate = ParseDateInput(datePart);
+
                     if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
                     {
-                        AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
-                        LogActivity($"Failed to add task via NLP: invalid reminder date '{datePart}'."); // Log this specific event
-                        return;
+                        AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Task added without reminder for now.");
+                        LogActivity($"Failed to add task via NLP: invalid reminder date '{datePart}'. Task added without reminder.");
+                        // Continue to add task without reminder, then set state for follow-up
                     }
                 }
             }
@@ -648,9 +816,30 @@ namespace samantha_progpart3
                 taskDescription = GetDefaultTaskDescription(taskTitle);
             }
 
-            AddTask(taskTitle, taskDescription, reminderDate);
-            AddBotMessage($"Task added with the description \"{taskDescription}\". {(reminderDate.HasValue ? $"I'll remind you on {reminderDate.Value.ToShortDateString()}." : "Would you like a reminder?")}");
+            // Add the task
+            TaskItem newTask = new TaskItem
+            {
+                Title = taskTitle,
+                Description = taskDescription,
+                ReminderDate = reminderDate, // Will be null if not parsed from initial command
+                IsCompleted = false
+            };
+            tasks.Add(newTask);
+            RefreshTasksDisplay();
             LogActivity($"Task '{taskTitle}' added. Reminder: {reminderDate?.ToShortDateString() ?? "None"}."); // Log this specific event
+
+
+            // If no reminder was set in the initial command, ask for confirmation
+            if (!reminderDate.HasValue)
+            {
+                _lastCreatedTask = newTask; // Store reference for follow-up
+                _awaitingReminderConfirmation = true;
+                AddBotMessage("Encryptonite : Task added. Would you like to add a reminder for this task?");
+            }
+            else
+            {
+                AddBotMessage($"Encryptonite : Task added with the description \"{taskDescription}\". I'll remind you on {reminderDate.Value.ToShortDateString()}.");
+            }
         }
 
         // Provides a default description for common cybersecurity tasks
@@ -691,8 +880,18 @@ namespace samantha_progpart3
                 description = GetDefaultTaskDescription(title);
             }
 
-            AddTask(title, description, reminder);
+            // Directly add the task with the GUI-provided reminder
+            TaskItem newTask = new TaskItem
+            {
+                Title = title,
+                Description = description,
+                ReminderDate = reminder,
+                IsCompleted = false
+            };
+            tasks.Add(newTask);
+            RefreshTasksDisplay(); // Update display
             AddBotMessage($"Task '{title}' added! {(reminder.HasValue ? $"I'll remind you on {reminder.Value.ToShortDateString()}." : "")}");
+            LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}."); // Log this specific event
 
             // Clear input fields and reset placeholder text
             TaskTitleTextBox.Text = "Task Title (e.g., Enable 2FA)";
@@ -700,18 +899,15 @@ namespace samantha_progpart3
             TaskDescriptionTextBox.Text = "Description (optional)";
             TaskDescriptionTextBox.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
             ReminderDatePicker.SelectedDate = null;
-            LogActivity($"Task '{title}' added via GUI. Reminder: {reminder?.ToShortDateString() ?? "None"}."); // Log this specific event
         }
 
-        // Adds a new TaskItem to the tasks collection (local implementation)
         private void AddTask(string title, string description, DateTime? reminderDate)
         {
             // Ensure title is not empty or placeholder
             if (string.IsNullOrWhiteSpace(title) || title == "Task Title (e.g., Enable 2FA)")
             {
-                AddBotMessage("Encryptonite : Task title cannot be empty or the placeholder. Please try again.");
-                LogActivity("AddTask method called with empty/placeholder title."); // Log this specific event
-                return;
+                LogActivity("AddTask method called with empty/placeholder title (internal call)."); // Log this specific event
+                return; // Do not add task if title is invalid from internal call
             }
 
             // Ensure description is not empty or placeholder if it's the only text
@@ -729,69 +925,71 @@ namespace samantha_progpart3
             };
             tasks.Add(newTask);
             RefreshTasksDisplay();
-            LogActivity($"New task added: '{title}'."); // Log this specific event
+            LogActivity($"New task added (internal): '{title}'."); // Log this specific event
         }
-
-        // Handles NLP command for setting a reminder (local implementation)
         private void HandleSetReminderCommand(string input)
         {
-            // Simplified reminder parsing for demonstration
-            // "remind me to [task] on [date]"
             string lowerInput = input.ToLower();
             int reminderIndex = lowerInput.IndexOf("remind me to");
+            string taskTitle = "";
+            DateTime? reminderDate = null;
+
             if (reminderIndex != -1)
             {
                 string remainder = input.Substring(reminderIndex + "remind me to".Length).Trim();
-                string taskTitle = remainder;
-                DateTime? reminderDate = null;
 
-                // Look for "on [date]"
+                // Look for "on [date]" in the remainder
                 int onIndex = remainder.IndexOf(" on ");
                 if (onIndex != -1)
                 {
                     taskTitle = remainder.Substring(0, onIndex).Trim();
                     string datePart = remainder.Substring(onIndex + " on ".Length).Trim();
-                    if (DateTime.TryParse(datePart, out DateTime parsedDate))
-                    {
-                        reminderDate = parsedDate;
-                    }
-                    else if (datePart.Contains("day")) // "in 3 days"
-                    {
-                        int days;
-                        if (int.TryParse(string.Join("", datePart.Where(char.IsDigit)), out days))
-                        {
-                            reminderDate = DateTime.Now.AddDays(days);
-                        }
-                    }
-                    else if (datePart.Contains("tomorrow"))
-                    {
-                        reminderDate = DateTime.Now.AddDays(1);
-                    }
-                    if (!reminderDate.HasValue && !string.IsNullOrWhiteSpace(datePart))
-                    {
-                        AddBotMessage($"Encryptonite : I couldn't understand the reminder date '{datePart}'. Please use a clear date format (e.g., '2025-12-31').");
-                        LogActivity($"Failed to set reminder: invalid date format '{datePart}'."); // Log this specific event
-                        return;
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(taskTitle))
-                {
-                    AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate); // Call local AddTask
-                    AddBotMessage($"Encryptonite : Okay, I've set a reminder for '{taskTitle}' {(reminderDate.HasValue ? $"on {reminderDate.Value.ToShortDateString()}." : "without a specific date.")}");
-                    LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate?.ToShortDateString() ?? "None"}."); // Log this specific event
+                    reminderDate = ParseDateInput(datePart);
                 }
                 else
                 {
-                    AddBotMessage("Encryptonite : What should I remind you about?");
-                    LogActivity("Failed to set reminder: no task specified."); // Log this specific event
+                    taskTitle = remainder; // No date specified in "remind me to [task]"
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(taskTitle))
+            {
+                AddBotMessage("Encryptonite : What should I remind you to do?");
+                LogActivity("Failed to set reminder: no task specified.");
+                return;
+            }
+
+            // If a task title was found, proceed to add the task
+            AddTask(taskTitle, GetDefaultTaskDescription(taskTitle), reminderDate); // Re-use the existing AddTask logic
+            if (reminderDate.HasValue)
+            {
+                AddBotMessage($"Encryptonite : Okay, I've set a reminder for '{taskTitle}' on {reminderDate.Value.ToShortDateString()}.");
+                LogActivity($"Reminder set for '{taskTitle}'. Date: {reminderDate.Value.ToShortDateString()}.");
+            }
+            else
+            {
+                // This case handles "remind me to [task]" without a date,
+                // and it should then follow the flow to ask for confirmation
+                // of a reminder date, similar to "add task"
+                _lastCreatedTask = tasks.LastOrDefault(t => t.Title == taskTitle); // Try to get the newly added task
+                if (_lastCreatedTask != null)
+                {
+                    _awaitingReminderConfirmation = true;
+                    AddBotMessage($"Encryptonite : Task '{taskTitle}' added. Would you like to add a reminder for it?");
+                    LogActivity($"Task '{taskTitle}' added, awaiting reminder confirmation.");
+                }
+                else
+                {
+                    AddBotMessage($"Encryptonite : Task '{taskTitle}' added, but I couldn't confirm a reminder date yet.");
+                    LogActivity($"Task '{taskTitle}' added, but last created task not found for reminder.");
                 }
             }
         }
 
+
         private void RefreshTasksDisplay()
         {
-            TasksListBox.Items.Refresh(); // Force UI update if properties within TaskItem change (e.g., IsCompleted)
+            TasksListBox.Items.Refresh(); //  TaskItem change (e.g., IsCompleted)
             LogActivity("Tasks display refreshed."); // Log this specific event
         }
 
@@ -811,7 +1009,6 @@ namespace samantha_progpart3
                     AddBotMessage($"Encryptonite : Task '{task.Title}' marked as incomplete.");
                     LogActivity($"Task '{task.Title}' marked as incomplete."); // Log this specific event
                 }
-                // Removed the call to RefreshTasksDisplay()
             }
         }
 
@@ -827,9 +1024,7 @@ namespace samantha_progpart3
             }
         }
 
-
         // --- Quiz Game Logic ---
-        // Loads predefined quiz questions (local implementation)
         private void LoadQuizQuestions()
         {
             quizQuestions = new List<QuizQuestion>
@@ -857,8 +1052,8 @@ namespace samantha_progpart3
                 new QuizQuestion
                 {
                     QuestionText = "What is phishing?",
-                    Options = new List<string> { "A. A type of fishing", "B. A malicious attempt to obtain sensitive information by disguising as a trustworthy entity", "C. A cybersecurity software", "D. A strong password" },
-                    CorrectAnswerIndex = 1
+                    Options = new List<string> { "A. A malicious attempt to obtain sensitive information by disguising as a trustworthy entity", "B. A type of fishing", "C. A cybersecurity software", "D. A strong password" },
+                    CorrectAnswerIndex = 0 // Corrected based on the question
                 },
                 new QuizQuestion
                 {
@@ -924,15 +1119,15 @@ namespace samantha_progpart3
             SubmitQuizAnswerButton.IsEnabled = true;
 
             DisplayQuizQuestionInChat();
-            DisplayQuizQuestion(); // Also update the GUI quiz display
+            DisplayQuizQuestion(); 
         }
 
-        // Method to process quiz answers typed in chat (local implementation)
+        // Method to process quiz answers typed in chat
         private void ProcessChatQuizAnswer(string userInput)
         {
             if (!isQuizActiveInChat || !awaitingQuizAnswerInChat)
             {
-                return; // Should not happen if state is managed correctly
+                return; 
             }
 
             int selectedAnswerIndex = -1;
@@ -1017,8 +1212,7 @@ namespace samantha_progpart3
             }
         }
 
-
-        // Method to display quiz question in the main chat area (local implementation)
+        // Method to display quiz question in the main chat area
         private void DisplayQuizQuestionInChat()
         {
             if (currentQuestionIndex < quizQuestions.Count)
@@ -1036,7 +1230,6 @@ namespace samantha_progpart3
                 AddBotMessage(questionOutput);
                 LogActivity($"Displayed quiz question {currentQuestionIndex + 1} in chat."); // Log this specific event
             }
-            // EndQuiz is called by ProcessChatQuizAnswer if all questions are done.
         }
 
         // Method to end quiz gracefully in chat (local implementation)
@@ -1069,14 +1262,13 @@ namespace samantha_progpart3
 
         private void StartQuiz_Click(object sender, RoutedEventArgs e)
         {
-            // This button now primarily mirrors the chat-based quiz start if not already active.
             // Or it can be used to restart/start the quiz directly from the tab.
-            StartChatQuiz(); // Re-use the chat-based quiz start logic
+            StartChatQuiz(); 
         }
 
         private void DisplayQuizQuestion()
         {
-            // This method updates the visual elements on the Quiz tab (local implementation)
+            // This method updates the visual elements on the Quiz tab 
             if (currentQuestionIndex < quizQuestions.Count)
             {
                 QuizQuestion currentQuestion = quizQuestions[currentQuestionIndex];
@@ -1101,7 +1293,7 @@ namespace samantha_progpart3
             }
             else
             {
-                // This branch handles ending the GUI quiz, it should also call the chat-based end
+                // This branch handles ending the GUI quiz
                 if (isQuizActiveInChat) { EndChatQuiz(); }
                 else { EndQuiz(); } // For cases where quiz might have started only from GUI
             }
@@ -1109,7 +1301,7 @@ namespace samantha_progpart3
 
         private void SubmitQuizAnswer_Click(object sender, RoutedEventArgs e)
         {
-            // This handles submission from the GUI buttons (local implementation)
+            // This handles submission from the GUI
             int selectedAnswerIndex = -1;
             for (int i = 0; i < currentQuizOptionRadios.Count; i++)
             {
@@ -1145,7 +1337,7 @@ namespace samantha_progpart3
                 Task.Delay(1500).ContinueWith(_ =>
                 {
                     Dispatcher.Invoke(() => DisplayQuizQuestion());
-                }, TaskScheduler.FromCurrentSynchronizationContext()); // Ensure UI thread for Dispatcher
+                }, TaskScheduler.FromCurrentSynchronizationContext());
             }
             else
             {
@@ -1155,7 +1347,7 @@ namespace samantha_progpart3
             }
         }
 
-        // Ends the quiz and displays the final score (local implementation)
+        // Ends the quiz and displays the final score 
         private void EndQuiz()
         {
             // This is the original EndQuiz for GUI only.
@@ -1180,19 +1372,18 @@ namespace samantha_progpart3
             AddBotMessage($"Encryptonite : Quiz completed! You scored {correctAnswersCount} out of {quizQuestions.Count}. {feedbackMessage}");
         }
 
-        // --- Activity Log Logic ---
-        // Logs an activity with a timestamp (local implementation)
+        // Logs an activity with a timestamp 
         private void LogActivity(string description)
         {
-            // No longer checking for MaxLogEntries here, activityLog will now store all.
+            //  activityLog will now store all.
             activityLog.Add(new ActivityLogEntry { Timestamp = DateTime.Now, Description = description });
             RefreshActivityLogDisplay();
         }
 
-        // Refreshes the display of the activity log (local implementation)
+        // Refreshes the display of the activity log 
         private void RefreshActivityLogDisplay()
         {
-            ActivityLogListBox.Items.Refresh(); // Force UI update
+            ActivityLogListBox.Items.Refresh(); 
             // Scroll to the bottom of the log to show the latest entry
             if (ActivityLogListBox.Items.Count > 0)
             {
@@ -1220,9 +1411,6 @@ namespace samantha_progpart3
             LogActivity("Displayed recent activity in chat."); // Log this specific event
         }
 
-
-        // --- NLP Simulation Methods (local implementation) ---
-
         // Detects sentiment in user input and provides a corresponding response
         private bool DetectSentiment(string input, out string response)
         {
@@ -1249,7 +1437,6 @@ namespace samantha_progpart3
         // Provides a relevant chatbot response based on user input keywords (using dictionary)
         private string GetBotResponse(string lowerInput)
         {
-            // Try to get response from dictionary first
             // Iterate through the dictionary to find if any key is contained in the input
             foreach (var entry in _cybersecurityResponses)
             {
@@ -1264,7 +1451,7 @@ namespace samantha_progpart3
                 }
             }
 
-            // Proactive suggestions based on time or history (simple simulation)
+            // Proactive suggestions based on time or history 
             if ((DateTime.Now - lastProactiveMentionTime).TotalMinutes > 5 || lastProactiveInterestMentioned == null)
             {
                 string[] proactiveSuggestions = {
